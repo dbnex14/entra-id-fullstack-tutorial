@@ -1,0 +1,18 @@
+{
+  // Java language server (Eclipse JDT.LS) runtime. Points the editor's Java
+  // tooling at Amazon Corretto 21 so it resolves the project's classpath the
+  // same way the Maven build does. Without this the language server may fall
+  // back to an older JDK (e.g. 17) and show spurious "cannot resolve" errors.
+  "java.jdt.ls.java.home": "C:\\Program Files\\java\\jdk-corretto-21",
+
+  // Registered JDKs available to the Java extension. Marking JavaSE-21 as the
+  // default aligns the language server with the project's <java.version>21</java.version>
+  // declared in entra-backend/pom.xml.
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-21",
+      "path": "C:\\Program Files\\java\\jdk-corretto-21",
+      "default": true
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "2.2 Implement the roles-claim converter `entra-backend/src/main/java/com/example/entraoauth/security/RolesClaimConverter.java`": [
+      {
+        "executionId": "4715cf1d-4b16-48f3-9ed4-dd3fb79e3a02",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787862155111
+      },
+      {
+        "executionId": "4715cf1d-4b16-48f3-9ed4-dd3fb79e3a02",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787862677537
+      }
+    ],
+    "2.1 Implement the audience validator `entra-backend/src/main/java/com/example/entraoauth/security/AudienceValidator.java`": [
+      {
+        "executionId": "4715cf1d-4b16-48f3-9ed4-dd3fb79e3a02",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787862677425
+      }
+    ],
+    "2.3 Implement the JWT decoder and CORS beans `entra-backend/src/main/java/com/example/entraoauth/security/JwtConfig.java`": [
+      {
+        "executionId": "376f3882-e4f2-4e97-a916-a63b825c47dd",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787863721314
+      },
+      {
+        "executionId": "376f3882-e4f2-4e97-a916-a63b825c47dd",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787863921346
+      }
+    ],
+    "2.4 Implement the security filter chain `entra-backend/src/main/java/com/example/entraoauth/security/SecurityConfig.java`": [
+      {
+        "executionId": "d5344cde-ed1f-4acd-8702-dd10ae329403",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787864130392
+      },
+      {
+        "executionId": "d5344cde-ed1f-4acd-8702-dd10ae329403",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787864764021
+      }
+    ],
+    "3.1 Implement the JPA entity and DTOs `entra-backend/src/main/java/com/example/entraoauth/item/Item.java`, `ItemDto.java`, `CreateItemRequest.java`, `UpdateItemRequest.java`": [
+      {
+        "executionId": "d5344cde-ed1f-4acd-8702-dd10ae329403",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787864130455
+      },
+      {
+        "executionId": "d5344cde-ed1f-4acd-8702-dd10ae329403",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787864763935
+      }
+    ],
+    "2. Backend security: filter chain, JWT decoding, claim conversion, and CORS": [
+      {
+        "executionId": "d5344cde-ed1f-4acd-8702-dd10ae329403",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787864764104
+      }
+    ],
+    "3.2 Implement the repository `entra-backend/src/main/java/com/example/entraoauth/item/ItemRepository.java`": [
+      {
+        "executionId": "468f1fa7-1f74-4ceb-b828-a78ffaf54055",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787865120077
+      },
+      {
+        "executionId": "468f1fa7-1f74-4ceb-b828-a78ffaf54055",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787865123946
+      }
+    ],
+    "3.3 Implement the service `entra-backend/src/main/java/com/example/entraoauth/item/ItemService.java`": [
+      {
+        "executionId": "29b42458-2030-4f11-b77b-0d8dfdecb5d4",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787865151291
+      },
+      {
+        "executionId": "29b42458-2030-4f11-b77b-0d8dfdecb5d4",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787865880170
+      }
+    ]
+  }
+}

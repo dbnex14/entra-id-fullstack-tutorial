@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+      ============================================================================
+      Spring Boot parent POM.
+      ============================================================================
+      The parent supplies Spring Boot's curated dependency-management BOM, which
+      pins consistent, tested versions for every "spring-boot-starter-*" artifact
+      AND for third-party libraries Spring Boot integrates with (Hibernate,
+      Jackson, Flyway, PostgreSQL driver, JUnit, etc.). Because of this, most of
+      the <dependency> entries below deliberately OMIT a <version> - the version
+      is inherited from the BOM so the whole stack stays compatible.
+
+      We pin Spring Boot 3.3.5, a stable 3.3.x release. The 3.3.x line is the
+      first Spring Boot generation whose dependency management defaults to
+      Flyway 10, which is exactly the modular Flyway generation this project
+      requires (see the Flyway note further down and R7.8).
+      ============================================================================
+    -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.3.5</version>
+        <relativePath/> <!-- look up parent from the Maven repository, not a local path -->
+    </parent>
+
+    <!--
+      Project coordinates. groupId/artifactId identify this reference backend in
+      any Maven repository; the produced artifact is the runnable Spring Boot jar.
+    -->
+    <groupId>com.example</groupId>
+    <artifactId>entra-backend</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>entra-backend</name>
+    <description>Entra ID OAuth2 resource server: validates Entra-issued JWT access tokens and exposes role-protected REST endpoints backed by PostgreSQL/Flyway.</description>
+
+    <properties>
+        <!--
+          Compile and run on JDK 21. Spring Boot 3 requires Java 17+; this project
+          standardizes on 21 (LTS) as declared in the design.
+        -->
+        <java.version>21</java.version>
+
+        <!--
+          Pin Flyway to 10.20.1. Overriding the version property here forces BOTH
+          Flyway artifacts (flyway-core and flyway-database-postgresql) onto the
+          exact same 10.20.1 coordinate, so the core engine and the PostgreSQL
+          module never drift apart. A version mismatch between these two is a
+          common cause of migration failures, so keeping them locked together is
+          intentional. See the Flyway dependency block below for the full
+          rationale (R7.8).
+        -->
+        <flyway.version>10.20.1</flyway.version>
+
+        <!--
+          jqwik version for property-based tests. Pinned to 1.9.3, the last
+          stable release before the 1.10+ line; it runs on the JUnit 5 Platform
+          that Spring Boot 3.3.x already manages, so no extra JUnit wiring is
+          needed. jqwik is used to validate the six universal correctness
+          properties described in the design (roles conversion, token rejection,
+          CORS, write authorization, etc.).
+        -->
+        <jqwik.version>1.9.3</jqwik.version>
+    </properties>
+
+    <dependencies>
+        <!--
+          ==== Web / REST layer ====
+          spring-boot-starter-web brings Spring MVC + an embedded Tomcat. This is
+          what exposes the /api/items REST endpoints and turns an incoming HTTP
+          request (carrying the "Authorization: Bearer <jwt>" header) into a
+          controller invocation. It is the entry point of the token-validation
+          pipeline: every protected request arrives through this layer.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!--
+          ==== Security core + method security ====
+          spring-boot-starter-security provides the servlet security filter chain
+          and enables method-level security (@PreAuthorize / hasRole(...)). This
+          is the component that enforces authentication (a valid token must be
+          present) and authorization (the token's roles claim must grant the
+          required ROLE_* authority) before a controller method runs.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!--
+          ==== OAuth2 Resource Server ====
+          spring-boot-starter-oauth2-resource-server pulls in
+          spring-security-oauth2-resource-server + oauth2-jose (Nimbus). This is
+          the heart of token validation: it decodes the JWT, fetches the JWKS
+          from Entra ID (via OIDC discovery of the issuer-uri), verifies the
+          signature, and runs issuer/expiry/audience validators. A request with a
+          missing, expired, wrongly-signed, or wrong-audience token is rejected
+          here with 401 before it ever reaches application code.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+
+        <!--
+          ==== Bean Validation (Jakarta Validation / Hibernate Validator) ====
+          spring-boot-starter-validation brings the Jakarta Validation API
+          (jakarta.validation.*) and its Hibernate Validator implementation. This
+          is what makes the @NotBlank constraint on the CreateItemRequest /
+          UpdateItemRequest DTOs meaningful: combined with @Valid on the
+          controller method parameters, an inbound write request whose "name" is
+          null, empty, or whitespace is rejected with 400 Bad Request BEFORE the
+          controller body runs - so malformed input never reaches the service or
+          the NOT NULL "name" column in the database.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!--
+          ==== Persistence (JPA / Hibernate) ====
+          spring-boot-starter-data-jpa provides Hibernate + Spring Data JPA. Once
+          a request has passed token validation, the authenticated subject
+          (oid/sub claim) flows into persisted rows (e.g. item.created_by),
+          tying stored data back to the caller's identity. ddl-auto is set to
+          "validate" in application.yml because Flyway - not Hibernate - owns the
+          schema.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!--
+          PostgreSQL JDBC driver. Runtime scope: application code compiles against
+          the JPA/JDBC abstractions, and the concrete driver is only needed when
+          the app actually opens connections to the PostgreSQL 17 database at
+          runtime. This is the wire between the persistence layer and the DB.
+        -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!--
+          ==== Flyway: core engine + PostgreSQL module ====
+          Flyway applies the versioned SQL migrations under db/migration on
+          startup, creating/upgrading the item, app_user, and access_audit tables
+          before the app serves traffic. This provisions the persistence side of
+          the pipeline.
+
+          IMPORTANT (R7.8) - the Flyway v10 modular split:
+          As of Flyway 10, database-specific support was moved OUT of flyway-core
+          into per-database modules. flyway-core alone can no longer handle
+          PostgreSQL (including PostgreSQL 17); the PostgreSQL support now lives in
+          the separate flyway-database-postgresql module. If that module is
+          missing, startup fails with a "No database found to handle
+          jdbc:postgresql://..." error. Therefore BOTH dependencies below are
+          mandatory, and both are pinned to the same ${flyway.version} (10.20.1,
+          i.e. v10+) so the engine and the PostgreSQL module stay in lockstep.
+        -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>${flyway.version}</version>
+        </dependency>
+        <dependency>
+            <!--
+              REQUIRED for PostgreSQL 17. Without this module Flyway startup aborts
+              with "No database found to handle jdbc:postgresql://...". Do not
+              remove it, and keep its version aligned with flyway-core above.
+            -->
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <version>${flyway.version}</version>
+        </dependency>
+
+        <!--
+          ==== Test dependencies ====
+          spring-boot-starter-test: JUnit 5, AssertJ, MockMvc, and Spring test
+          context support. Used by the security-slice tests (@WebMvcTest) and by
+          the MockMvc-driven property tests that assert 401/403 behavior of the
+          token-validation and authorization pipeline.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
+          spring-security-test: supplies the jwt() request post-processor and
+          SecurityMockMvcRequestPostProcessors so tests can simulate an
+          authenticated caller with specific authorities (e.g. ROLE_Admin vs
+          ROLE_Viewer) without minting real Entra tokens. Central to the
+          write-authorization property test.
+        -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
+          net.jqwik:jqwik - property-based testing on the JUnit 5 Platform. Drives
+          the correctness properties over many generated inputs (e.g. arbitrary
+          role arrays, mutated tokens, arbitrary origins), complementing the
+          example-based unit tests. Test scope only; version pinned above.
+        -->
+        <dependency>
+            <groupId>net.jqwik</groupId>
+            <artifactId>jqwik</artifactId>
+            <version>${jqwik.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!--
+              spring-boot-maven-plugin repackages the application into an
+              executable "fat" jar (all dependencies embedded) and enables
+              "mvn spring-boot:run". Version is inherited from the Spring Boot
+              parent, so it stays in sync with the framework release.
+            -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

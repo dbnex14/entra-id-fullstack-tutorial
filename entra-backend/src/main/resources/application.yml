@@ -1,0 +1,135 @@
+# =============================================================================
+# application.yml — Resource Server configuration for the Entra ID OAuth
+# full-stack reference.
+#
+# This single file wires three concerns that together let the backend act as an
+# OAuth2 Resource Server that trusts Microsoft Entra ID:
+#   1. TOKEN VALIDATION — how incoming bearer JWTs are verified (issuer, signature
+#      via JWKS, and audience).
+#   2. SCHEMA OWNERSHIP — Flyway owns the database schema; Hibernate only validates
+#      that the entities match the Flyway-migrated tables.
+#   3. CONNECTION BUDGETING — a hard 10-second ceiling on acquiring a database
+#      connection so a wedged/unreachable database fails fast at startup.
+#
+# Every block below is commented to explain how it participates in one of those
+# three concerns. Identity constants (tenant id, client id) come from the
+# authoritative constants listed in the spec's tasks.md.
+# =============================================================================
+
+server:
+  # The backend Resource Server listens on 8080. The Angular SPA runs on
+  # http://localhost:4200 and calls this origin; CORS (configured in Java) allows
+  # exactly that one browser origin. Keeping the port explicit makes the
+  # frontend<->backend contract unambiguous.
+  port: 8080
+
+spring:
+  # ---------------------------------------------------------------------------
+  # TOKEN VALIDATION
+  # ---------------------------------------------------------------------------
+  # Spring Security's OAuth2 Resource Server support turns this app into a
+  # bearer-token validator: every protected request must carry a valid
+  # `Authorization: Bearer <JWT>` header. The properties below tell Spring where
+  # to find the signing keys and who the trusted issuer is.
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # OIDC DISCOVERY (R6.1): Given only the issuer-uri, Spring fetches the
+          # OpenID Connect discovery document at
+          #   <issuer-uri>/.well-known/openid-configuration
+          # and reads the `jwks_uri` from it. That means the JWKS (JSON Web Key
+          # Set) endpoint — the public keys used to verify the token signature —
+          # is derived AUTOMATICALLY. Spring also uses this issuer value to assert
+          # the token's `iss` claim matches (see JwtValidators.createDefaultWithIssuer
+          # in JwtConfig). The trailing `/v2.0` is required: Entra's v2.0 issuer
+          # differs from the legacy v1.0 issuer, and a mismatch here rejects every
+          # token.
+          issuer-uri: https://login.microsoftonline.com/76325907-a5db-46b1-9d5a-cbcca2e63e66/v2.0
+          # OPTIONAL EXPLICIT OVERRIDE: If OIDC discovery is unavailable (locked-down
+          # network, proxy) you may pin the JWKS endpoint directly instead of letting
+          # discovery derive it. When set, Spring skips discovery and loads keys from
+          # here. Leave it commented so discovery (above) remains the source of truth.
+          # jwk-set-uri: https://login.microsoftonline.com/76325907-a5db-46b1-9d5a-cbcca2e63e66/discovery/v2.0/keys
+
+  # ---------------------------------------------------------------------------
+  # CONNECTION BUDGETING (R7.1, R7.2)
+  # ---------------------------------------------------------------------------
+  # The datasource points at the native (non-Docker) PostgreSQL 17 instance.
+  # Flyway uses this same connection at startup to run migrations, so if the
+  # database is unreachable the whole application fails fast instead of hanging.
+  datasource:
+    url: jdbc:postgresql://localhost:5432/my_workspace
+    username: postgres
+    password: postgres
+    hikari:
+      # HikariCP is the connection pool. connection-timeout is the maximum time
+      # (in milliseconds) a caller will wait to obtain a connection before an
+      # exception is thrown. 10000 ms = a 10-second budget (R7.1): if PostgreSQL
+      # is down or unreachable, startup halts with a connection error within ten
+      # seconds rather than blocking indefinitely (R7.2).
+      connection-timeout: 10000   # 10s connect budget (R7.1, R7.2)
+
+  # ---------------------------------------------------------------------------
+  # SCHEMA OWNERSHIP (R7)
+  # ---------------------------------------------------------------------------
+  jpa:
+    hibernate:
+      # ddl-auto: validate means Hibernate NEVER creates, alters, or drops tables.
+      # On startup it only VALIDATES that the JPA entities map onto tables that
+      # already exist (created by the Flyway migrations below). Flyway is the sole
+      # owner of the schema; Hibernate is a read-only consistency check. If an
+      # entity and its table disagree, startup fails — catching drift early.
+      ddl-auto: validate          # schema owned by Flyway, never by Hibernate (R7)
+    # open-in-view: false disables the Open-Session-In-View pattern. With it off,
+    # the JPA persistence context (and its database connection) is closed as soon
+    # as the service-layer transaction completes, rather than being held open
+    # through view rendering. This returns connections to the pool sooner and
+    # prevents accidental lazy-loading during serialization.
+    open-in-view: false
+
+  # ---------------------------------------------------------------------------
+  # SCHEMA OWNERSHIP — FLYWAY MIGRATIONS (R7.3-R7.6)
+  # ---------------------------------------------------------------------------
+  # Flyway runs automatically at startup (Spring Boot auto-configuration), using
+  # the datasource above. It applies pending migrations in ascending version
+  # order and records each one in flyway_schema_history. This is what makes the
+  # schema reproducible and version-controlled.
+  flyway:
+    # Turn migrations on. When enabled, Flyway executes before Hibernate's
+    # validate step, so the tables exist by the time Hibernate checks them.
+    enabled: true
+    # Where migration scripts live on the classpath. Files here follow the
+    # V<version>__<description>.sql naming convention and are applied in order.
+    locations: classpath:db/migration
+    # baseline-on-migrate: false means Flyway will NOT silently baseline an
+    # existing, non-empty schema. We start from a clean, Flyway-managed schema so
+    # V1 (and every later migration) is actually applied and recorded — no hidden
+    # assumptions about pre-existing tables.
+    baseline-on-migrate: false
+    # validate-on-migrate: true recomputes the checksum of every already-applied
+    # migration and compares it to the value stored in flyway_schema_history. If a
+    # previously-applied script was edited (checksum drift), Flyway HALTS startup
+    # with a validation error and leaves the schema unchanged (R7.6). This
+    # guarantees the code and the live schema can never silently diverge.
+    validate-on-migrate: true     # checksum validation halts on drift (R7.6)
+
+# =============================================================================
+# CUSTOM APPLICATION PROPERTIES
+# =============================================================================
+# These are read by our own code (AudienceValidator via @ConfigurationProperties /
+# @Value), not by Spring's built-in autoconfiguration.
+app:
+  security:
+    # AUDIENCE VALIDATION (R6.4): Spring's default JWT validation checks the
+    # issuer and signature but does NOT verify the `aud` (audience) claim. A token
+    # minted for a different API would otherwise be accepted. Our custom
+    # AudienceValidator rejects any token whose `aud` claim is not one of the
+    # values below, mapping a failure to a 401 with a WWW-Authenticate challenge.
+    #
+    # Entra can stamp the audience as either the bare application (client) id or
+    # the api:// Application ID URI, depending on how the token was requested, so
+    # both forms are accepted here.
+    audiences:
+      - 4ebf7ee5-2120-4d4a-8c31-63642bb9fc9c
+      - api://4ebf7ee5-2120-4d4a-8c31-63642bb9fc9c
