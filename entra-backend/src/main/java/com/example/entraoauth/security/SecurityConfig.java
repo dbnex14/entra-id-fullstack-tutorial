@@ -1,5 +1,6 @@
 package com.example.entraoauth.security;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -10,8 +11,11 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfigurationSource;
+
+import com.example.entraoauth.audit.AccessAuditRepository;
 
 /**
  * The single, authoritative HTTP security policy for the Resource_Server. Everything about
@@ -42,6 +46,15 @@ import org.springframework.web.cors.CorsConfigurationSource;
  * are actually enforced (R8). Those expressions test the {@code ROLE_*} authorities that
  * {@link RolesClaimConverter} produced from the token's {@code roles} claim; a caller lacking the
  * required authority is denied with 403 by the {@code BearerTokenAccessDeniedHandler} (R2.7, R8.3).
+ *
+ * <p><strong>Access-audit filter (task 9.2).</strong> This class also wires an
+ * {@link AccessAuditFilter} into the chain, positioned <em>after</em> the resource server's
+ * {@code BearerTokenAuthenticationFilter} so the authenticated principal is available. That filter is
+ * <strong>audit-only</strong> &mdash; it records the outcome of each {@code /api/**} request (subject,
+ * resolved {@code ROLE_*} authorities, method, path, status) for the server-side authority-confirmation
+ * verification story, and never makes an authorization decision (R2). It is added <em>only</em> when an
+ * {@link AccessAuditRepository} bean is present (resolved via {@link ObjectProvider}), so this config
+ * degrades gracefully for slice tests that lack a JPA layer.
  */
 @Configuration
 @EnableMethodSecurity // enables @PreAuthorize on controller methods (R8)
@@ -62,12 +75,23 @@ public class SecurityConfig {
      *                    decoded/validated {@link Jwt} into the authenticated principal, deriving
      *                    {@code ROLE_*} authorities from the {@code roles} claim via
      *                    {@link RolesClaimConverter}.
+     * @param auditRepositoryProvider an {@link ObjectProvider} for the {@link AccessAuditRepository}
+     *                    (task 9.2). It is deliberately an {@code ObjectProvider} rather than a direct
+     *                    dependency so this configuration <strong>degrades gracefully</strong>: in the
+     *                    full application a repository bean exists and the {@link AccessAuditFilter} is
+     *                    added to the chain; in web/security-slice tests that import this
+     *                    {@code SecurityConfig} without a JPA layer, no repository bean is present, the
+     *                    provider resolves to nothing, and the audit filter is simply not added &mdash;
+     *                    so those tests continue to load the context and pass unchanged. The audit
+     *                    filter is <em>audit-only</em> and never affects authorization (R2), so
+     *                    omitting it in a slice test does not change any security behavior under test.
      * @return the fully-built, stateless, JWT-resource-server filter chain
      * @throws Exception if the {@link HttpSecurity} builder fails to assemble the chain
      */
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http, CorsConfigurationSource cors,
-                                    Converter<Jwt, AbstractAuthenticationToken> jwtConverter)
+                                    Converter<Jwt, AbstractAuthenticationToken> jwtConverter,
+                                    ObjectProvider<AccessAuditRepository> auditRepositoryProvider)
             throws Exception {
         http
             // (R5) Register the CORS policy from JwtConfig. Spring Security's CorsFilter runs early
@@ -104,6 +128,27 @@ public class SecurityConfig {
             // derived from the Entra `roles` claim (ROLE_*), not the default `scope`/`scp` claim.
             .oauth2ResourceServer(oauth -> oauth
                 .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtConverter)));
+
+        // (Task 9.2) AUDIT-ONLY access-audit filter. This is NOT an authorization decision (R2): it
+        // records the OUTCOME of the claim-driven decision (subject, resolved ROLE_* authorities,
+        // method, path, response status) into the access_audit table for the server-side
+        // authority-confirmation verification step. It never gates a request.
+        //
+        // We resolve the AccessAuditRepository lazily via ObjectProvider so this config degrades
+        // gracefully: only when a repository bean actually exists (the full application, with the JPA
+        // layer) is the filter constructed and added. Web/security-slice tests that @Import this
+        // SecurityConfig without a JPA layer have no such bean, so getIfAvailable() returns null and
+        // the filter is skipped -- keeping those tests loading and passing unchanged.
+        //
+        // Placement: addFilterAfter(..., BearerTokenAuthenticationFilter.class). The resource server's
+        // BearerTokenAuthenticationFilter is what validates the token and populates the
+        // SecurityContext, so running the audit filter AFTER it guarantees the authenticated principal
+        // and its authorities are available for recording.
+        AccessAuditRepository auditRepository = auditRepositoryProvider.getIfAvailable();
+        if (auditRepository != null) {
+            http.addFilterAfter(new AccessAuditFilter(auditRepository),
+                    BearerTokenAuthenticationFilter.class);
+        }
         // Failure handling is provided by the framework defaults for a bearer-token resource server:
         //
         //   * Authentication failure (missing / expired / malformed / invalid-signature / wrong-aud

@@ -4,3 +4,6 @@
 **/*.class
 **/dist/
 **/.angular/
+
+# jqwik property-test sample database (local test artifact)
+**/.jqwik-database

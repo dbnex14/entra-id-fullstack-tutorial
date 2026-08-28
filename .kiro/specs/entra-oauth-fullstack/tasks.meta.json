@@ -1,5 +1,10 @@
 {
-  "pbtResults": {},
+  "pbtResults": {
+    "4.2 Write the invalid-token rejection property test `entra-backend/src/test/java/com/example/entraoauth/security/InvalidTokenRejectionPropertyTest.java`": {
+      "status": "passed",
+      "lastRunTimestamp": 1787872145676
+    }
+  },
   "executionHistory": {
     "2.2 Implement the roles-claim converter `entra-backend/src/main/java/com/example/entraoauth/security/RolesClaimConverter.java`": [
       {
@@ -85,6 +90,364 @@
         "executionId": "29b42458-2030-4f11-b77b-0d8dfdecb5d4",
         "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
         "timestamp": 1787865880170
+      }
+    ],
+    "3.4 Implement the controller `entra-backend/src/main/java/com/example/entraoauth/item/ItemController.java`": [
+      {
+        "executionId": "8fd862c5-b6b7-4caa-9b84-5319edbe9d21",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787866141404
+      },
+      {
+        "executionId": "5248a379-81e7-491f-a23f-3db88daf0c91",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869595580
+      }
+    ],
+    "6.2 Create the signal session store `EntraUi/src/app/auth/auth-session.store.ts`": [
+      {
+        "executionId": "8fd862c5-b6b7-4caa-9b84-5319edbe9d21",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787866141523
+      },
+      {
+        "executionId": "5248a379-81e7-491f-a23f-3db88daf0c91",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869595790
+      }
+    ],
+    "6.1 Create MSAL and identity configuration `EntraUi/src/app/auth/msal.config.ts`": [
+      {
+        "executionId": "8fd862c5-b6b7-4caa-9b84-5319edbe9d21",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787866141667
+      },
+      {
+        "executionId": "5248a379-81e7-491f-a23f-3db88daf0c91",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869595491
+      }
+    ],
+    "6.5 Create the route guards `EntraUi/src/app/auth/auth.guard.ts`": [
+      {
+        "executionId": "5248a379-81e7-491f-a23f-3db88daf0c91",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869584461
+      },
+      {
+        "executionId": "5248a379-81e7-491f-a23f-3db88daf0c91",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869595728
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881678028
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881686557
+      }
+    ],
+    "6.3 Create the token refresh service `EntraUi/src/app/auth/token-refresh.service.ts`": [
+      {
+        "executionId": "5248a379-81e7-491f-a23f-3db88daf0c91",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869585880
+      },
+      {
+        "executionId": "5248a379-81e7-491f-a23f-3db88daf0c91",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869595674
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881678100
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881686475
+      }
+    ],
+    "3. Backend domain: entity, DTOs, repository, service, and controller": [
+      {
+        "executionId": "5248a379-81e7-491f-a23f-3db88daf0c91",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869595861
+      }
+    ],
+    "5. Checkpoint - backend complete": [
+      {
+        "executionId": "5248a379-81e7-491f-a23f-3db88daf0c91",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869624330
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881677915
+      }
+    ],
+    "6.4 Create the HTTP auth interceptor `EntraUi/src/app/auth/auth-token.interceptor.ts`": [
+      {
+        "executionId": "5248a379-81e7-491f-a23f-3db88daf0c91",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869624416
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881686641
+      }
+    ],
+    "7.1 Create the login/redirect-handling component `EntraUi/src/app/login/login.component.ts` (+ template)": [
+      {
+        "executionId": "5248a379-81e7-491f-a23f-3db88daf0c91",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869624485
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881695611
+      }
+    ],
+    "7.2 Create the dashboard and admin components `EntraUi/src/app/dashboard/dashboard.component.ts` and `EntraUi/src/app/admin/admin.component.ts` (+ templates)": [
+      {
+        "executionId": "5248a379-81e7-491f-a23f-3db88daf0c91",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869624544
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881695797
+      }
+    ],
+    "7.3 Update the routes `EntraUi/src/app/app.routes.ts`": [
+      {
+        "executionId": "5248a379-81e7-491f-a23f-3db88daf0c91",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869624600
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881695705
+      }
+    ],
+    "7.4 Update the application config `EntraUi/src/app/app.config.ts`": [
+      {
+        "executionId": "5248a379-81e7-491f-a23f-3db88daf0c91",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869624655
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881695867
+      }
+    ],
+    "9.1 Create the verification guide `entra-backend/VERIFICATION.md` (or `docs/VERIFICATION.md`)": [
+      {
+        "executionId": "5248a379-81e7-491f-a23f-3db88daf0c91",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869624705
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881702137
+      }
+    ],
+    "9.2 Implement the access-audit request filter `entra-backend/src/main/java/com/example/entraoauth/security/AccessAuditFilter.java`": [
+      {
+        "executionId": "5248a379-81e7-491f-a23f-3db88daf0c91",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869624748
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881702034
+      }
+    ],
+    "10. Final checkpoint - full stack": [
+      {
+        "executionId": "5248a379-81e7-491f-a23f-3db88daf0c91",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869624839
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881706704
+      }
+    ],
+    "4.1 Write the roles-converter property test `entra-backend/src/test/java/com/example/entraoauth/security/RolesClaimConverterPropertyTest.java`": [
+      {
+        "executionId": "26aa0a17-d3c4-4fc2-bd21-9477ada5a75a",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869737845
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881659983
+      }
+    ],
+    "4.3 Write the CORS property test `entra-backend/src/test/java/com/example/entraoauth/security/CorsPropertyTest.java`": [
+      {
+        "executionId": "26aa0a17-d3c4-4fc2-bd21-9477ada5a75a",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869737915
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881661419
+      }
+    ],
+    "4.5 Write the security-slice unit tests `entra-backend/src/test/java/com/example/entraoauth/item/ItemControllerSecurityTest.java`": [
+      {
+        "executionId": "26aa0a17-d3c4-4fc2-bd21-9477ada5a75a",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869737975
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881661663
+      }
+    ],
+    "4.2 Write the invalid-token rejection property test `entra-backend/src/test/java/com/example/entraoauth/security/InvalidTokenRejectionPropertyTest.java`": [
+      {
+        "executionId": "26aa0a17-d3c4-4fc2-bd21-9477ada5a75a",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869738030
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881661537
+      }
+    ],
+    "4.4 Write the write-authorization property test `entra-backend/src/test/java/com/example/entraoauth/item/WriteAuthorizationPropertyTest.java`": [
+      {
+        "executionId": "26aa0a17-d3c4-4fc2-bd21-9477ada5a75a",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787869738096
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881661762
+      }
+    ],
+    "4. Backend property-based and security-slice tests": [
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881661838
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881661950
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881662146
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881662392
+      },
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881662561
+      }
+    ],
+    "6. Frontend auth infrastructure": [
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881725198
+      }
+    ],
+    "7. Frontend components, providers, and routing (wiring)": [
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881725306
+      }
+    ],
+    "9. Integration verification scripts and instructional guide": [
+      {
+        "executionId": "3204b65f-e323-4d86-8458-ed174e274a42",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881725359
+      }
+    ],
+    "8.1 Write the single-flight refresh property test `EntraUi/src/app/auth/token-refresh.service.spec.ts`": [
+      {
+        "executionId": "ff881859-3659-453a-b1fe-4c8cf76a8fc6",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787881828550
+      },
+      {
+        "executionId": "ff881859-3659-453a-b1fe-4c8cf76a8fc6",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787882373870
+      },
+      {
+        "executionId": "747a89fd-72a1-4640-997c-427a98f139c3",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787884965127
+      },
+      {
+        "executionId": "747a89fd-72a1-4640-997c-427a98f139c3",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787884971643
+      }
+    ],
+    "8. Frontend property-based tests": [
+      {
+        "executionId": "ff881859-3659-453a-b1fe-4c8cf76a8fc6",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787882374005
+      }
+    ],
+    "8.3 Write the interceptor unit tests `EntraUi/src/app/auth/auth-token.interceptor.spec.ts`": [
+      {
+        "executionId": "747a89fd-72a1-4640-997c-427a98f139c3",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787884945797
+      },
+      {
+        "executionId": "747a89fd-72a1-4640-997c-427a98f139c3",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787884950008
+      }
+    ],
+    "8.2 Write the retry-then-reauth property test `EntraUi/src/app/auth/token-refresh.retry.spec.ts`": [
+      {
+        "executionId": "747a89fd-72a1-4640-997c-427a98f139c3",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787884945867
+      }
+    ],
+    "1. Backend foundation: build, configuration, and initial schema": [
+      {
+        "executionId": "747a89fd-72a1-4640-997c-427a98f139c3",
+        "chatSessionId": "sess_6621ca0f-287b-4bce-9e83-5bcc3424a723",
+        "timestamp": 1787884971702
       }
     ]
   }
