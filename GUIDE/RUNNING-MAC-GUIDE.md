@@ -20,6 +20,11 @@ Inside it are two projects side by side:
 A single `git clone` retrieves the whole working full-stack project - no
 submodules, no second repository, no special flags.
 
+> Related documentation: the repository `README.md` is the overview and entry
+> point; the `DOC/` folder holds reference docs (ARCHITECTURE, API, SECURITY,
+> DATABASE, CONFIGURATION); `LEARNING-GUIDE.md` is a file-by-file reading path;
+> `RUNNING-GUIDE.md` covers running on any OS.
+
 ---
 
 ## 1. Install the toolchain

@@ -11,6 +11,11 @@ You do not need to run anything to learn from this path — reading the files in
 order is enough. When you *do* want to see it working, the final stop
 (`entra-backend/VERIFICATION.md`) tells you how.
 
+> **Related documentation:** the repository `README.md` is the overview and
+> entry point; the `DOC/` folder holds reference docs (ARCHITECTURE, API,
+> SECURITY, DATABASE, CONFIGURATION); the sibling guides `RUNNING-GUIDE.md`
+> and `RUNNING-MAC-GUIDE.md` cover running the apps.
+
 ---
 
 ## What you will learn

@@ -14,6 +14,11 @@ There are three moving parts:
 Read the sections in order the first time. Once set up, the day-to-day loop is
 just "start Postgres -> run backend -> run frontend".
 
+> Related documentation: the repository `README.md` is the overview and entry
+> point; the `DOC/` folder holds reference docs (ARCHITECTURE, API, SECURITY,
+> DATABASE, CONFIGURATION); `LEARNING-GUIDE.md` is a file-by-file reading path;
+> `RUNNING-MAC-GUIDE.md` covers macOS setup.
+
 > A note on scope: the backend and the automated tests run fully locally with no
 > cloud dependency. **Interactive browser login requires a real Microsoft Entra
 > ID app registration** matching the constants in this project. See
