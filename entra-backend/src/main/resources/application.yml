@@ -130,6 +130,8 @@ app:
     # Entra can stamp the audience as either the bare application (client) id or
     # the api:// Application ID URI, depending on how the token was requested, so
     # both forms are accepted here.
-    audiences:
-      - 4ebf7ee5-2120-4d4a-8c31-63642bb9fc9c
-      - api://4ebf7ee5-2120-4d4a-8c31-63642bb9fc9c
+    # NOTE: declared as a COMMA-SEPARATED STRING (not a YAML list). Spring's
+    # @Value("${app.security.audiences}") binds a comma-delimited value directly
+    # into a List<String>; a YAML sequence would be stored as indexed properties
+    # (audiences[0], audiences[1]) that @Value cannot resolve by this name.
+    audiences: 4ebf7ee5-2120-4d4a-8c31-63642bb9fc9c,api://4ebf7ee5-2120-4d4a-8c31-63642bb9fc9c
