@@ -135,3 +135,44 @@ app:
     # into a List<String>; a YAML sequence would be stored as indexed properties
     # (audiences[0], audiences[1]) that @Value cannot resolve by this name.
     audiences: 4ebf7ee5-2120-4d4a-8c31-63642bb9fc9c,api://4ebf7ee5-2120-4d4a-8c31-63642bb9fc9c
+
+# =============================================================================
+# ACTUATOR (operational endpoints)
+# =============================================================================
+# Exposes all actuator endpoints over HTTP and shows full details to everyone.
+# This is a permissive setup suitable for a local tutorial. In production you
+# would NOT expose all of these publicly.
+#
+# Safe to expose publicly:
+#   - health : liveness/readiness (keep show-details limited in prod)
+#   - info   : static build/app info
+#
+# Should require authentication (or be disabled) in production - they leak
+# configuration, secrets, or internals:
+#   - env, configprops : reveal configuration/property values (can expose secrets)
+#   - beans, mappings, conditions : expose internal wiring and routes
+#   - metrics, loggers, threaddump, heapdump : operational/diagnostic detail
+#     (heapdump can contain sensitive in-memory data)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"        # expose every actuator endpoint over HTTP
+        exclude: heapdump   # exclude heapdump
+  endpoint:
+    health:
+      show-details: always  # show full health details to everyone (dev only)
+    env:
+      show-values: always   # show real env values (dev only; can leak secrets)
+    configprops:
+      show-values: always
+  info:
+    env:
+      enabled: true         # allow info.* properties below to surface under /info
+
+info:
+  app:
+    name: entra-backend
+    description: Entra ID OAuth2 resource server
+
+
