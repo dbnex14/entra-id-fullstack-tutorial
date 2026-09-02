@@ -36,6 +36,7 @@
 import { Routes } from '@angular/router';
 
 import { authGuard, roleGuard } from './auth/auth.guard';
+import { HomeComponent } from './home/home.component';
 import { LoginComponent } from './login/login.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { AdminComponent } from './admin/admin.component';
@@ -61,6 +62,16 @@ export const routes: Routes = [
   {
     path: 'login',
     component: LoginComponent,
+  },
+
+  // ── /home — the PUBLIC landing page (NO GUARD) ────────────────────────────
+  // The default, unauthenticated destination. Visiting the app root and
+  // returning here after logout both land on this page WITHOUT triggering an
+  // automatic login. From here the user clicks "Sign in" to begin the flow.
+  // This is what makes login user-initiated rather than forced on page load.
+  {
+    path: 'home',
+    component: HomeComponent,
   },
 
   // ── /dashboard — the default authenticated landing area ───────────────────
@@ -95,24 +106,23 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard(['Admin'])], // session + Admin role (server authoritative)
   },
 
-  // ── '' (empty path) — default redirect to the dashboard ───────────────────
+  // ── '' (empty path) — default redirect to the PUBLIC home page ────────────
   // With `pathMatch: 'full'` this matches ONLY the exact empty URL (the app
-  // root). Landing on '/' sends the user to /dashboard, whose `authGuard` then
-  // decides whether to admit them or start login. This gives every visitor a
-  // sensible default landing route (R1.8).
+  // root). Landing on '/' now sends the user to the UNGUARDED /home page, so a
+  // visitor is greeted with a landing page and signs in on demand — the app no
+  // longer forces a login redirect just for opening the root URL.
   {
     path: '',
-    redirectTo: 'dashboard',
+    redirectTo: 'home',
     pathMatch: 'full',
   },
 
-  // ── '**' (wildcard) — catch-all redirect to the dashboard ─────────────────
-  // Any unrecognized URL falls through to here and is redirected to the
-  // dashboard rather than showing a broken/blank route. As with the empty-path
-  // redirect, `authGuard` on /dashboard then handles the authenticated-vs-login
-  // decision, so unknown deep links still funnel through the normal auth flow.
+  // ── '**' (wildcard) — catch-all redirect to the PUBLIC home page ──────────
+  // Any unrecognized URL falls through to here and is redirected to /home
+  // rather than a guarded route, so unknown deep links land on the public
+  // landing page instead of triggering an automatic login.
   {
     path: '**',
-    redirectTo: 'dashboard',
+    redirectTo: 'home',
   },
 ];

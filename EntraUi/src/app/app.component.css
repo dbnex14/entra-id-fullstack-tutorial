@@ -1,28 +1,43 @@
-/* Minimal app-shell styling: a thin top bar and a padded main content area.
-   The routed feature components provide their own internal layout. */
+/* App shell: a top bar and a padded, width-constrained main content area.
+   Feature components render their own cards inside .app-main. */
 :host {
   display: block;
-  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: #1f2430;
+  min-height: 100vh;
 }
 
 .app-bar {
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  padding: 0.75rem 1.25rem;
-  background: #1f2430;
-  color: #fff;
+  padding: 0.75rem 1.5rem;
+  background: var(--color-header);
+  color: var(--color-header-text);
+  box-shadow: 0 1px 4px rgba(31, 36, 48, 0.15);
 }
 
 .app-bar__title {
-  font-weight: 600;
-  font-size: 1rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
 }
 
 .app-bar__nav {
   display: flex;
-  gap: 1rem;
+  gap: 1.25rem;
+}
+
+.app-bar__nav a {
+  color: var(--color-header-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+}
+
+.app-bar__nav a.is-active,
+.app-bar__nav a:hover {
+  color: #fff;
+  border-bottom-color: var(--color-primary);
 }
 
 /* Push the identity/auth control to the far right of the bar. */
@@ -30,9 +45,9 @@
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.85rem;
   font-size: 0.9rem;
-  color: #c9d1e0;
+  color: var(--color-header-muted);
 }
 
 .app-bar__roles {
@@ -41,28 +56,17 @@
 }
 
 .app-bar__btn {
-  background: #3d6be5;
+  background: var(--color-primary);
   color: #fff;
   border: none;
-  border-radius: 4px;
-  padding: 0.4rem 0.9rem;
+  border-radius: 5px;
+  padding: 0.4rem 0.95rem;
   font-size: 0.85rem;
   cursor: pointer;
 }
 
 .app-bar__btn:hover {
-  background: #2f56bf;
-}
-
-.app-bar__nav a {
-  color: #c9d1e0;
-  text-decoration: none;
-  font-size: 0.9rem;
-}
-
-.app-bar__nav a.is-active,
-.app-bar__nav a:hover {
-  color: #fff;
+  background: var(--color-primary-hover);
 }
 
 .app-main {

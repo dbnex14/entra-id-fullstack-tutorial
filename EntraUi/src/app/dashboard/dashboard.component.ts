@@ -82,7 +82,8 @@ export interface ItemDto {
       Rendering straight from signals keeps the UI reactive without manual
       subscriptions or change-detection plumbing.
     -->
-    <section class="dashboard">
+    <section class="page dashboard">
+      <div class="card">
       <header class="dashboard__header">
         <h1>Items</h1>
 
@@ -142,6 +143,7 @@ export interface ItemDto {
           </p>
         }
       }
+      </div>
     </section>
   `,
 })

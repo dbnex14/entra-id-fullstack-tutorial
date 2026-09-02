@@ -69,11 +69,21 @@ import { AuthSessionStore } from '../auth/auth-session.store';
 const POST_LOGIN_REDIRECT_KEY = 'postLoginRedirect';
 
 /**
- * The default authenticated landing route to use when no originally requested
- * route was persisted (R1.8). This matches the default redirect target defined
- * in app.routes.ts (task 7.3).
+ * The default AUTHENTICATED landing route used after a SUCCESSFUL login when no
+ * originally requested route was persisted (R1.8). A freshly signed-in user with
+ * no saved destination lands on the dashboard (the entry point of the protected
+ * area).
  */
 const DEFAULT_LANDING_ROUTE = '/dashboard';
+
+/**
+ * The PUBLIC route to send the user to when there was NO redirect response to
+ * process (e.g. they navigated to /login directly and are not mid-callback).
+ * This must be an UNGUARDED route so we do not trigger an automatic login for a
+ * user who never asked to sign in — otherwise landing here would bounce them
+ * straight to Entra ID, the exact behavior we want to avoid.
+ */
+const PUBLIC_LANDING_ROUTE = '/home';
 
 /**
  * The finite set of states the login state machine can occupy. Rendered in the
@@ -214,14 +224,14 @@ export class LoginComponent implements OnInit {
         await this.msal.instance.handleRedirectPromise();
 
       // ── BRANCH A: NO REDIRECT RESPONSE (result === null) ────────────────
-      // There was nothing to process — this was not a genuine login callback.
-      // We do not have (and cannot establish) a session from this navigation.
-      // Rather than stranding the user on a blank /login page, send them to the
-      // default landing route; authGuard on that route will (re)initiate
-      // interactive login if they are still unauthenticated.
+      // There was nothing to process — this was not a genuine login callback
+      // (e.g. the user navigated to /login directly). We do not have (and cannot
+      // establish) a session from this navigation. Send them to the PUBLIC home
+      // page rather than a guarded route, so a user who never asked to sign in
+      // is NOT bounced straight to Entra ID.
       if (result === null) {
         this.status.set('done');
-        await this.router.navigateByUrl(DEFAULT_LANDING_ROUTE);
+        await this.router.navigateByUrl(PUBLIC_LANDING_ROUTE);
         return;
       }
 

@@ -88,7 +88,8 @@ interface UpdateItemRequest {
       The form fields are bound to the name / description signals through small
       change handlers so the state stays signal-based (Angular 19 convention).
     -->
-    <section class="admin">
+    <section class="page admin">
+      <div class="card">
       <header class="admin__header">
         <h1>Create item (Admin)</h1>
 
@@ -154,7 +155,9 @@ interface UpdateItemRequest {
           {{ errorMessage() }}
         </div>
       }
+      </div>
 
+      <div class="card">
       <!--
         ── EDIT EXISTING ITEM (PUT /entra-backend/items/{id}) ─────────────────
         Exercises the Admin-only UPDATE endpoint. We first GET the current items
@@ -232,6 +235,7 @@ interface UpdateItemRequest {
           {{ editErrorMessage() }}
         </div>
       }
+      </div>
     </section>
   `,
 })
