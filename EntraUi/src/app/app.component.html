@@ -1,12 +1,17 @@
 <header class="app-bar">
   <span class="app-bar__title">Item Manager</span>
 
-  <!-- Feature navigation. The guards on these routes still decide access;
-       these links are just the way to reach them. -->
-  <nav class="app-bar__nav">
-    <a routerLink="/dashboard" routerLinkActive="is-active">Dashboard</a>
-    <a routerLink="/admin" routerLinkActive="is-active">Admin</a>
-  </nav>
+  <!-- Feature navigation. Shown only to signed-in users; the Admin link is
+       further restricted to Admins. The route guards remain the real gate —
+       these conditions are UX only. -->
+  @if (isAuthenticated()) {
+    <nav class="app-bar__nav">
+      <a routerLink="/dashboard" routerLinkActive="is-active">Dashboard</a>
+      @if (isAdmin()) {
+        <a routerLink="/admin" routerLinkActive="is-active">Admin</a>
+      }
+    </nav>
+  }
 
   <!-- Identity + auth control, pushed to the right. Shows the signed-in roles
        and a Sign out button when authenticated; otherwise a Sign in button. -->

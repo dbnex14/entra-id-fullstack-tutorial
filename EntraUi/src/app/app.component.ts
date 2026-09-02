@@ -42,6 +42,16 @@ export class AppComponent {
   }
 
   /**
+   * Whether the current session carries the Admin role. Drives whether the
+   * Admin nav link is shown. This is a UX convenience only — the /admin route is
+   * still guarded by roleGuard(['Admin']) and the backend independently enforces
+   * hasRole('Admin') on writes, so hiding the link is not a security control.
+   */
+  isAdmin(): boolean {
+    return this.store.state().roles.includes('Admin');
+  }
+
+  /**
    * Start interactive login (Authorization Code + PKCE) on demand. Lets a user
    * sign in from the shell without first hitting a guarded route.
    */
