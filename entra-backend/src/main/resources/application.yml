@@ -174,5 +174,3 @@ info:
   app:
     name: entra-backend
     description: Entra ID OAuth2 resource server
-
-

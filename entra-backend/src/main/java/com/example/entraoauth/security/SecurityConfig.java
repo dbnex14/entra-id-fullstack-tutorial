@@ -114,9 +114,9 @@ public class SecurityConfig {
                 // OPTIONS request before a real cross-origin call; it carries no Authorization
                 // header, so it must be allowed through or the actual request never happens.
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // Permit the health probe so orchestrators/load-balancers can check liveness
-                // without a token. This endpoint exposes no protected data.
-                .requestMatchers("/actuator/health").permitAll()
+                // Permit all actuators.  See commeint in application.yml re potential sensitive data
+                // being exposed by this and how to resolve it.
+                .requestMatchers("/actuator/**").permitAll()
                 // (R8.4) Everything else requires a valid, authenticated bearer token. A request
                 // with no token (or an invalid one) never reaches a controller; it is stopped here
                 // and answered with 401 by the entry point noted below.
