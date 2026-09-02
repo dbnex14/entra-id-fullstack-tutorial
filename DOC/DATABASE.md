@@ -64,7 +64,7 @@ decision and is never read to MAKE one.**
 | `subject` | VARCHAR(100) | NOT NULL | Token subject that made the request |
 | `authorities` | TEXT | NOT NULL | Serialized `ROLE_*` set granted for the request |
 | `http_method` | VARCHAR(10) | NOT NULL | e.g. GET, POST |
-| `path` | VARCHAR(300) | NOT NULL | e.g. /api/items |
+| `path` | VARCHAR(300) | NOT NULL | e.g. /entra-backend/items |
 | `status` | INTEGER | NOT NULL | HTTP response status |
 | `occurred_at` | TIMESTAMPTZ | NOT NULL DEFAULT now() | When it happened |
 

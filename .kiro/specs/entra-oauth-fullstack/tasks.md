@@ -112,7 +112,7 @@ no shorthand, no elided lines, no `// ...` placeholders. Frontend code MUST use 
     - _Design: Components and Interfaces > Backend > Role-Protected REST Controller_
 
   - [x] 3.4 Implement the controller `entra-backend/src/main/java/com/example/entraoauth/item/ItemController.java`
-    - `@RestController @RequestMapping("/api/items")`. `GET` with `@PreAuthorize("hasAnyRole('Viewer','Admin')")` returns 200 (R8.1); `POST` with `@PreAuthorize("hasRole('Admin')")` returns 201 (R8.2); `PUT /{id}` with `@PreAuthorize("hasRole('Admin')")` (R8.2, R8.3).
+    - `@RestController @RequestMapping("/items")` (served under the `/entra-backend` servlet context path, i.e. `/entra-backend/items`). `GET` with `@PreAuthorize("hasAnyRole('Viewer','Admin')")` returns 200 (R8.1); `POST` with `@PreAuthorize("hasRole('Admin')")` returns 201 (R8.2); `PUT /{id}` with `@PreAuthorize("hasRole('Admin')")` (R8.2, R8.3).
     - Comment that `hasRole('Admin')` checks `ROLE_Admin` from the converter, that missing authority yields 403 with no mutation (R8.3), and that missing/invalid tokens are stopped earlier with 401 (R8.4, R8.5).
     - _Requirements: 8.1, 8.2, 8.3_
     - _Design: Components and Interfaces > Backend > Role-Protected REST Controller_
@@ -193,8 +193,8 @@ no shorthand, no elided lines, no `// ...` placeholders. Frontend code MUST use 
     - _Design: Identity & Token Flow > Login sequence_
 
   - [x] 7.2 Create the dashboard and admin components `EntraUi/src/app/dashboard/dashboard.component.ts` and `EntraUi/src/app/admin/admin.component.ts` (+ templates)
-    - Dashboard: read `/api/items` via `HttpClient` (interceptor attaches bearer) and render results using signals.
-    - Admin: perform a write (`POST /api/items`) demonstrating the Admin-only path; render 403 handling for non-admins.
+    - Dashboard: read `/entra-backend/items` via `HttpClient` (interceptor attaches bearer) and render results using signals.
+    - Admin: perform a write (`POST /entra-backend/items`) demonstrating the Admin-only path; render 403 handling for non-admins.
     - Comment how the bearer token and roles drive what each component can do.
     - _Requirements: 8.1, 8.2, 1.5_
     - _Design: Components and Interfaces > Frontend_

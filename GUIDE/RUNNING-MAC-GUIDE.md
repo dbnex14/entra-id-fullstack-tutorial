@@ -245,7 +245,7 @@ validates, OIDC discovery loads JWKS, and Tomcat starts on port 8080.
 Validate:
 
 ```bash
-curl -i http://localhost:8080/api/items      # expect HTTP/1.1 401 + WWW-Authenticate: Bearer
+curl -i http://localhost:8080/entra-backend/items      # expect HTTP/1.1 401 + WWW-Authenticate: Bearer
 psql "postgresql://postgres:postgres@localhost:5432/my_workspace" -c "\dt"
 # expect: item, app_user, access_audit, flyway_schema_history
 ```
@@ -375,7 +375,7 @@ registration):
 
 **Works with zero cloud setup (validate today):**
 - Backend boots, Flyway migrates, tables created.
-- `curl /api/items` -> 401 (filter chain active).
+- `curl /entra-backend/items` -> 401 (filter chain active).
 - `mvn -o clean test` -> 15 tests pass.
 - `npm test` -> 13 tests pass; `npm run build` -> succeeds.
 - Frontend serves at :4200 and attempts the login redirect.
@@ -418,6 +418,6 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 ( cd EntraUi && npm install && npm start )
 
 # validate
-curl -i http://localhost:8080/api/items       # 401 = good
+curl -i http://localhost:8080/entra-backend/items       # 401 = good
 open http://localhost:4200
 ```

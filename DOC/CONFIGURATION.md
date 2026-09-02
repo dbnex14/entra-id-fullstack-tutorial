@@ -17,7 +17,7 @@ Entra app registration.
 | Accepted audiences | `4ebf7ee5-2120-4d4a-8c31-63642bb9fc9c` and `api://4ebf7ee5-2120-4d4a-8c31-63642bb9fc9c` | backend `application.yml` |
 | SPA redirect URI | `http://localhost:4200` | frontend `msal.config.ts`; Entra app registration |
 | Frontend origin | `http://localhost:4200` | backend CORS (`JwtConfig`) |
-| Backend origin | `http://localhost:8080` | frontend interceptor + protected-resource map |
+| Backend origin | `http://localhost:8080` (API base `http://localhost:8080/entra-backend`) | frontend interceptor + protected-resource map |
 
 ## Backend configuration (application.yml)
 
@@ -26,6 +26,7 @@ File: `entra-backend/src/main/resources/application.yml`
 | Setting | Value | Purpose |
 | --- | --- | --- |
 | `server.port` | `8080` | API listen port |
+| `server.servlet.context-path` | `/entra-backend` | mounts every endpoint under `/entra-backend` (e.g. `/entra-backend/items`, `/entra-backend/actuator/health`) |
 | `spring.security.oauth2.resourceserver.jwt.issuer-uri` | Entra `/v2.0` authority | OIDC discovery -> JWKS; asserts `iss` |
 | `spring.datasource.url` | `jdbc:postgresql://localhost:5432/my_workspace` | database |
 | `spring.datasource.username` / `password` | `postgres` / `postgres` | database creds |
@@ -55,7 +56,7 @@ File: `EntraUi/src/app/auth/msal.config.ts`
 | `auth.redirectUri` | `http://localhost:4200` | must match a registered SPA redirect URI |
 | `cache.cacheLocation` | `localStorage` | origin-scoped token cache (persists refresh token) |
 | requested scopes | `API_SCOPE`, `openid`, `profile`, `offline_access` | `offline_access` yields a refresh token |
-| protected resource map | `http://localhost:8080/api/*` -> `[API_SCOPE]` | which calls get a token |
+| protected resource map | `http://localhost:8080/entra-backend/*` -> `[API_SCOPE]` | which calls get a token |
 
 `API_SCOPE` and `AUTHORITY` are derived from `CLIENT_ID`/`TENANT_ID`, so changing
 the two ids updates everything consistently.
@@ -68,7 +69,7 @@ the two ids updates everything consistently.
 | Clock skew allowance | 60 s | `JwtConfig` (`JwtTimestampValidator`) | tolerance on `exp` |
 | Max transient retries | 3 | `token-refresh.service.ts` | plus the initial attempt = 4 total |
 | Backoff | 500 / 1000 / 2000 ms | `token-refresh.service.ts` | exponential per retry |
-| API URL prefix | `http://localhost:8080/api` | `auth-token.interceptor.ts` | only these requests get a bearer token |
+| API URL prefix | `http://localhost:8080/entra-backend` | `auth-token.interceptor.ts` | only these requests get a bearer token |
 
 ## Editor configuration (.vscode/settings.json)
 
@@ -97,7 +98,8 @@ Full app-registration steps are in `GUIDE/RUNNING-MAC-GUIDE.md` Section 8.
 
 ## Ports and origins summary
 
-- Backend API: `http://localhost:8080` (change via `server.port`; if you do,
+- Backend API: `http://localhost:8080/entra-backend` (host/port change via
+  `server.port`, path via `server.servlet.context-path`; if you change either,
   update the frontend interceptor prefix and protected-resource map).
 - Frontend SPA: `http://localhost:4200` (change via `ng serve --port`; if you do,
   update the backend CORS allowed origin in `JwtConfig` and the Entra redirect

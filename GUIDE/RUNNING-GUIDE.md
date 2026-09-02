@@ -155,12 +155,12 @@ Watch the log for these milestones, roughly in order:
 
 ### Validate the backend is up
 
-The backend is stateless and every `/api/**` route requires a valid token, so
+The backend is stateless and every `/entra-backend/**` route requires a valid token, so
 the quickest health check is to confirm it **rejects** an unauthenticated call
 with **401** (this proves the security filter chain is active):
 
 ```bash
-curl -i http://localhost:8080/api/items
+curl -i http://localhost:8080/entra-backend/items
 ```
 
 Expect:
@@ -252,11 +252,11 @@ flow and what you should observe:
    "Completing sign-in...", then it navigates to the route you originally
    requested (`/dashboard`). The session store is now populated (token + expiry +
    roles).
-4. **Dashboard loads items.** It issues `GET /api/items` with the bearer token
+4. **Dashboard loads items.** It issues `GET /entra-backend/items` with the bearer token
    attached automatically by the interceptor. Expect either a list of items or an
    empty list (the `item` table starts empty until an Admin creates one).
 5. **Try `/admin`.**
-   - As an **Admin**: the create form works; submitting issues `POST /api/items`
+   - As an **Admin**: the create form works; submitting issues `POST /entra-backend/items`
      and you should see the newly created item reflected (201 Created).
    - As a **Viewer** (or no Admin role): `roleGuard` keeps you off the route
      client-side; and even if you reached the API, the server returns **403** for
@@ -344,7 +344,7 @@ Be clear-eyed about the cloud dependency so you know what you can validate today
 
 **Works with NO Entra ID / no login:**
 - Backend starts, Flyway migrates, tables are created.
-- `GET /api/items` returns **401** unauthenticated (proves the filter chain).
+- `GET /entra-backend/items` returns **401** unauthenticated (proves the filter chain).
 - The entire backend test suite (15 tests) passes.
 - The entire frontend test suite (13 tests) passes.
 - The frontend serves at `:4200` and you can see the app shell and routing
@@ -388,7 +388,7 @@ rebuild/restart both apps.
 | Backend fails at startup with a JWKS/issuer error | No internet to reach the Entra authority for OIDC discovery | Ensure network access; or point `issuer-uri` at a reachable authority. |
 | Backend fails with a Hibernate schema validation error | Entity/schema mismatch | Ensure Flyway ran (check `flyway_schema_history`); do not hand-edit tables. |
 | `mvn` builds with the wrong Java | `JAVA_HOME` not 21 | Point `JAVA_HOME` at a JDK 21 for that terminal. |
-| `curl /api/items` returns connection refused | Backend not up | Start the backend; watch for "Tomcat started on port 8080". |
+| `curl /entra-backend/items` returns connection refused | Backend not up | Start the backend; watch for "Tomcat started on port 8080". |
 | Frontend build shows a bundle budget warning | Expected for this reference | Ignore - it is a warning, not an error. |
 | Login redirect loops or errors on return | Entra app registration missing/mismatched | See Section 6; align the constants and app-registration config. |
 | Frontend tests try to open a real browser | Missing `--browsers=ChromeHeadless` | Add the flag; ensure Chrome is installed. |
@@ -401,7 +401,7 @@ If you just want to confirm "it works" locally without Entra:
 
 - [ ] `psql ... -c "\dt"` shows `item`, `app_user`, `access_audit`,
       `flyway_schema_history` after the backend starts.
-- [ ] `curl -i http://localhost:8080/api/items` returns **401** with a
+- [ ] `curl -i http://localhost:8080/entra-backend/items` returns **401** with a
       `WWW-Authenticate: Bearer` header.
 - [ ] `mvn -o clean test` (in `entra-backend`) reports **15 tests, BUILD SUCCESS**.
 - [ ] `npm test -- --watch=false --browsers=ChromeHeadless` (in `EntraUi`)

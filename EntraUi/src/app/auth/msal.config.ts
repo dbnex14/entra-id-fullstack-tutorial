@@ -131,11 +131,11 @@ const REDIRECT_URI = 'http://localhost:4200';
 /**
  * The backend API base that our bearer token is allowed to be attached to. The
  * `/*` suffix lets MSAL's protected-resource matching cover every path beneath
- * `/api` (e.g. `/api/items`, `/api/items/1`). Requests to any other origin will
- * NOT receive a token, preventing our access token from leaking to third
- * parties.
+ * `/entra-backend` (e.g. `/entra-backend/items`, `/entra-backend/items/1`).
+ * Requests to any other origin will NOT receive a token, preventing our access
+ * token from leaking to third parties.
  */
-const PROTECTED_API_BASE = 'http://localhost:8080/api/*';
+const PROTECTED_API_BASE = 'http://localhost:8080/entra-backend/*';
 
 /**
  * The full set of scopes requested at interactive login / silent acquisition:
@@ -265,7 +265,7 @@ export function msalGuardConfigFactory(): MsalGuardConfiguration {
  */
 export function msalInterceptorConfigFactory(): MsalInterceptorConfiguration {
   // Map the backend API base to the single scope that mints a token audienced
-  // for our Resource Server (R1.3). Using `/api/*` covers every sub-path.
+  // for our Resource Server (R1.3). Using `/entra-backend/*` covers every sub-path.
   const protectedResourceMap = new Map<string, Array<string> | null>([
     [PROTECTED_API_BASE, [API_SCOPE]],
   ]);

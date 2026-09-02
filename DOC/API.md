@@ -1,10 +1,11 @@
 # API Reference
 
-The backend exposes a small role-protected REST API under `/api/items`. All
-endpoints require a valid Entra ID bearer token; authorization is enforced from
-the token's `roles` claim.
+The backend exposes a small role-protected REST API under `/entra-backend/items`.
+All endpoints require a valid Entra ID bearer token; authorization is enforced
+from the token's `roles` claim.
 
-- Base URL (local): `http://localhost:8080`
+- Base URL (local): `http://localhost:8080/entra-backend` (the application is
+  mounted under the `/entra-backend` servlet context path).
 - Auth: `Authorization: Bearer <access_token>` on every request.
 - Content type: `application/json`.
 
@@ -20,7 +21,7 @@ the token's `roles` claim.
 
 ## Endpoints
 
-### GET /api/items
+### GET /entra-backend/items
 
 List all items.
 
@@ -43,11 +44,11 @@ Response body (array of `ItemDto`):
 Example:
 
 ```bash
-curl -i http://localhost:8080/api/items \
+curl -i http://localhost:8080/entra-backend/items \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-### POST /api/items
+### POST /entra-backend/items
 
 Create a new item.
 
@@ -68,13 +69,13 @@ Request body:
 Example:
 
 ```bash
-curl -i -X POST http://localhost:8080/api/items \
+curl -i -X POST http://localhost:8080/entra-backend/items \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"New item","description":"Optional text"}'
 ```
 
-### PUT /api/items/{id}
+### PUT /entra-backend/items/{id}
 
 Update an existing item.
 
@@ -90,7 +91,7 @@ Update an existing item.
 Example:
 
 ```bash
-curl -i -X PUT http://localhost:8080/api/items/1 \
+curl -i -X PUT http://localhost:8080/entra-backend/items/1 \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"Renamed","description":"Updated text"}'
@@ -118,7 +119,7 @@ curl -i -X PUT http://localhost:8080/api/items/1 \
 
 The authorization behavior across identities and endpoints:
 
-| Identity | GET /api/items | POST /api/items | PUT /api/items/{id} |
+| Identity | GET /entra-backend/items | POST /entra-backend/items | PUT /entra-backend/items/{id} |
 | --- | --- | --- | --- |
 | Anonymous (no token) | 401 | 401 | 401 |
 | Invalid/expired token | 401 | 401 | 401 |
@@ -141,8 +142,8 @@ headers Authorization/Content-Type are permitted, with credentials allowed. See
 
 ## Health
 
-`/actuator/health` is permitted without authentication (used for liveness). All
-other paths require a valid token.
+`/entra-backend/actuator/health` is permitted without authentication (used for
+liveness). All other paths require a valid token.
 
 ## Obtaining a token for manual testing
 

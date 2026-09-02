@@ -69,7 +69,7 @@ export const routes: Routes = [
   // interactive login (R1.1). Because navigating here while unauthenticated
   // triggers the login redirect, this is effectively the entry point of the
   // "protected" half of the app. The interceptor attaches the bearer token to
-  // the component's `/api/items` calls.
+  // the component's `/entra-backend/items` calls.
   {
     path: 'dashboard',
     component: DashboardComponent,

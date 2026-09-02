@@ -91,7 +91,7 @@ Validate the backend is up (401 is the expected success signal for an
 unauthenticated call to a stateless resource server):
 
 ```bash
-curl -i http://localhost:8080/api/items    # HTTP/1.1 401 + WWW-Authenticate: Bearer
+curl -i http://localhost:8080/entra-backend/items    # HTTP/1.1 401 + WWW-Authenticate: Bearer
 ```
 
 > Live sign-in requires a Microsoft Entra app registration matching the identity

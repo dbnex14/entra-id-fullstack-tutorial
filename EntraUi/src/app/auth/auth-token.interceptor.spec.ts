@@ -20,8 +20,8 @@
 // responses (200s, 401 challenges) deterministically.
 //
 // The scenarios mirror the task's checklist:
-//   1. ATTACH (R-attach)   — a bearer header is added to /api requests.
-//   2. SCOPING             — non-/api requests get NO bearer header.
+//   1. ATTACH (R-attach)   — a bearer header is added to /entra-backend requests.
+//   2. SCOPING             — non-/entra-backend requests get NO bearer header.
 //   3. PROACTIVE (R3.4/4.1)— when the stored token is within the 300s expiry
 //                            window, the interceptor refreshes BEFORE sending and
 //                            dispatches the request with the fresh token.
@@ -89,7 +89,7 @@ import { TokenRefreshService } from './token-refresh.service';
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Absolute API prefix that the interceptor scopes bearer attachment to. */
-const API_URL = 'http://localhost:8080/api/items';
+const API_URL = 'http://localhost:8080/entra-backend/items';
 
 /** A non-API URL (e.g. a third-party call) that must NOT receive a bearer. */
 const NON_API_URL = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
@@ -275,9 +275,9 @@ describe('authTokenInterceptor (task 8.3)', () => {
   });
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 1. ATTACH — bearer header on /api requests.
+  // 1. ATTACH — bearer header on /entra-backend requests.
   // ───────────────────────────────────────────────────────────────────────────
-  it('attaches Authorization: Bearer <token> to /api requests', () => {
+  it('attaches Authorization: Bearer <token> to /entra-backend requests', () => {
     // Seed a valid, non-stale session so no proactive refresh fires.
     store.setSession('current-access-token', farFutureExpiry(), ['Viewer']);
 
@@ -295,9 +295,9 @@ describe('authTokenInterceptor (task 8.3)', () => {
   });
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 2. SCOPING — non-/api requests get NO bearer header.
+  // 2. SCOPING — non-/entra-backend requests get NO bearer header.
   // ───────────────────────────────────────────────────────────────────────────
-  it('does NOT attach a bearer header to non-/api requests', () => {
+  it('does NOT attach a bearer header to non-/entra-backend requests', () => {
     // Even with an authenticated session, foreign origins must not receive our
     // API token (it would leak cross-origin and could break MSAL's own calls).
     store.setSession('current-access-token', farFutureExpiry(), ['Viewer']);

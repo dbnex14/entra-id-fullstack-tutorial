@@ -8,7 +8,7 @@
 // role-protected REST contract. It performs a create against the backend write
 // endpoint:
 //
-//     POST http://localhost:8080/api/items   body: { name, description }
+//     POST http://localhost:8080/entra-backend/items   body: { name, description }
 //
 // which the backend guards with `@PreAuthorize("hasRole('Admin')")`. This is the
 // canonical Admin-only path used to show the role split end to end.
@@ -172,7 +172,7 @@ export class AdminComponent {
 
   // ── Request state (signals) ────────────────────────────────────────────────
 
-  /** True while the POST /api/items request is in flight. */
+  /** True while the POST /entra-backend/items request is in flight. */
   readonly submitting = signal<boolean>(false);
 
   /** The item returned by a successful 201 response, or null before/failure. */
@@ -219,7 +219,7 @@ export class AdminComponent {
 
     // POST to the Admin-only endpoint. `hasRole('Admin')` on the server decides
     // whether this becomes a 201 or a 403 — the client cannot self-authorize.
-    this.http.post<ItemDto>(`${API_BASE_URL}/api/items`, body).subscribe({
+    this.http.post<ItemDto>(`${API_BASE_URL}/entra-backend/items`, body).subscribe({
       next: (item) => {
         // 201 path (Admin token accepted, R8.2): show the created item and reset
         // the form for the next entry.

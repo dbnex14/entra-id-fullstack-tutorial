@@ -76,7 +76,7 @@ An Angular 19 standalone SPA (no NgModules; `inject()` DI and signals throughout
     gate; the server remains authoritative).
 - **Feature components** (`app/{login,dashboard,admin}/`)
   - `login` handles the redirect callback and session establishment.
-  - `dashboard` reads `/api/items`; `admin` performs the Admin-only write.
+  - `dashboard` reads `/entra-backend/items`; `admin` performs the Admin-only write.
 - **Composition** (`app/app.config.ts`, `app/app.routes.ts`)
   - Providers wire the router, HttpClient + custom interceptor, and MSAL.
 
@@ -95,7 +95,7 @@ An Angular 19 standalone SPA (no NgModules; `inject()` DI and signals throughout
 
 ### Authenticated API call
 
-1. Component issues an HTTP request to `http://localhost:8080/api/...`.
+1. Component issues an HTTP request to `http://localhost:8080/entra-backend/...`.
 2. The interceptor, if the token is within the 300s window, refreshes first
    (proactive), then attaches `Authorization: Bearer <token>`.
 3. The backend validates the token and evaluates `@PreAuthorize`.

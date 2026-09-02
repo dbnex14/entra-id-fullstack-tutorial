@@ -26,7 +26,7 @@
 //
 // ── SCOPING: WHICH REQUESTS GET A TOKEN ─────────────────────────────────────
 // This custom interceptor attaches tokens ONLY to our backend API calls
-// (`http://localhost:8080/api/...`). Requests to any other host — most notably
+// (`http://localhost:8080/entra-backend/...`). Requests to any other host — most notably
 // MSAL's own calls to the Entra ID token/authorize endpoints — must NOT carry
 // our API bearer token (doing so could leak the token cross-origin and would
 // break MSAL's own auth). Non-API requests pass straight through untouched. This
@@ -62,7 +62,7 @@ import { TokenRefreshService } from './token-refresh.service';
  * authorize calls, static assets, third-party URLs) is passed through as-is so
  * our API token never leaks to another origin.
  */
-const API_URL_PREFIX = 'http://localhost:8080/api';
+const API_URL_PREFIX = 'http://localhost:8080/entra-backend';
 
 /**
  * Functional HTTP interceptor (Angular 19). Registered via

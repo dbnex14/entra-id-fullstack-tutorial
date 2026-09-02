@@ -301,7 +301,7 @@ then read the auth building blocks in dependency order.
     **Look for:** the **proactive** path (refresh before a near-expiry request),
     the **reactive** path (one refresh + one retry on a 401 `invalid_token`
     challenge), the single-retry loop guard, and the URL scoping (only
-    `/api` requests get the bearer — never MSAL's own origin). Read the
+    `/entra-backend` requests get the bearer — never MSAL's own origin). Read the
     `withBearer` and `isExpiredChallenge` helpers.
 
 26. **File:** `EntraUi/src/app/auth/auth.guard.ts`
@@ -326,13 +326,13 @@ outcomes observable.
     `postLoginRedirect` key the guard wrote.
 
 28. **File:** `EntraUi/src/app/dashboard/dashboard.component.ts`
-    **Read for:** a read screen (`GET /api/items`) using signals; the interceptor
+    **Read for:** a read screen (`GET /entra-backend/items`) using signals; the interceptor
     attaches the token transparently.
     **Look for:** the `ItemDto` interface (mirrors the backend DTO) and the
     loading/error/items signals.
 
 29. **File:** `EntraUi/src/app/admin/admin.component.ts`
-    **Read for:** an Admin-only write screen (`POST /api/items`) and graceful 403
+    **Read for:** an Admin-only write screen (`POST /entra-backend/items`) and graceful 403
     handling.
     **Look for:** the signal-bound form and the comment that the **server**
     enforces Admin — the client just presents it nicely.

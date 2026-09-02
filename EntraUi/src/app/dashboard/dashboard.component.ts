@@ -7,7 +7,7 @@
 // This standalone Angular 19 component demonstrates the "read" half of the
 // role-protected REST contract. It calls the backend read endpoint:
 //
-//     GET http://localhost:8080/api/items
+//     GET http://localhost:8080/entra-backend/items
 //
 // and renders the returned items using signals. It is deliberately thin: it does
 // NOT attach the bearer token itself, and it does NOT know how tokens are
@@ -17,7 +17,7 @@
 //
 // ── HOW THE BEARER TOKEN AND ROLES DRIVE THIS COMPONENT ─────────────────────
 // 1. BEARER TOKEN (transparent to this component):
-//    When this component calls `http.get('/api/items')`, the request flows
+//    When this component calls `http.get('/entra-backend/items')`, the request flows
 //    through authTokenInterceptor, which reads the current Access_Token from the
 //    AuthSessionStore and stamps it onto the outgoing request as
 //    `Authorization: Bearer <token>`. If the token is near expiry the interceptor
@@ -75,7 +75,7 @@ export interface ItemDto {
   template: `
     <!--
       The template is a direct projection of this component's signals:
-        - loading()  : the GET /api/items request is in flight,
+        - loading()  : the GET /entra-backend/items request is in flight,
         - error()    : a request-level failure message (network, 401 after refresh
                        failure, 403, etc.),
         - items()    : the successfully loaded rows.
@@ -167,7 +167,7 @@ export class DashboardComponent implements OnInit {
   /** The loaded items. Starts empty; populated on a successful GET. */
   readonly items = signal<ItemDto[]>([]);
 
-  /** True while the GET /api/items request is in flight. */
+  /** True while the GET /entra-backend/items request is in flight. */
   readonly loading = signal<boolean>(false);
 
   /** Human-readable error message when a request fails; empty otherwise. */
@@ -206,7 +206,7 @@ export class DashboardComponent implements OnInit {
 
     // The interceptor attaches `Authorization: Bearer <token>` to this request;
     // we only describe the response shape via the ItemDto generic.
-    this.http.get<ItemDto[]>(`${API_BASE_URL}/api/items`).subscribe({
+    this.http.get<ItemDto[]>(`${API_BASE_URL}/entra-backend/items`).subscribe({
       next: (loaded) => {
         // Replace the backing signal with the freshly loaded rows.
         this.items.set(loaded);

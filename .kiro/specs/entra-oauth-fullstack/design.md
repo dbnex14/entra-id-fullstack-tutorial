@@ -155,7 +155,7 @@ sequenceDiagram
     participant RS as Resource_Server
     participant Entra as Entra ID JWKS
 
-    SPA->>RS: GET /api/items with Authorization Bearer access_token
+    SPA->>RS: GET /entra-backend/items with Authorization Bearer access_token
     RS->>RS: JwtDecoder verifies signature using cached JWKS from Entra
     RS->>RS: Validate iss equals Tenant issuer
     RS->>RS: Validate aud equals Client_ID or api://Client_ID
@@ -415,9 +415,12 @@ A controller exposing a sample domain resource (`items`) demonstrates read/write
 with method security. Read requires `ROLE_Viewer` (or `ROLE_Admin`); write requires
 `ROLE_Admin`.
 
+The controller maps `/items`; the `/entra-backend` prefix comes from the
+`server.servlet.context-path`, so the public URL is `/entra-backend/items`.
+
 ```java
 @RestController
-@RequestMapping("/api/items")
+@RequestMapping("/items")
 class ItemController {
     private final ItemService service;
     ItemController(ItemService service) { this.service = service; }
@@ -876,7 +879,7 @@ void invalidTokensAreRejectedWith401(@ForAll("invalidTokens") TokenSpec spec) th
     //   - badSignature: signed with a key absent from the JWKS      -> R6.7
     String bearer = buildToken(spec); // helper mints a JWS matching the mutation
 
-    mockMvc.perform(get("/api/items").header("Authorization", "Bearer " + bearer))
+    mockMvc.perform(get("/items").header("Authorization", "Bearer " + bearer))
         .andExpect(status().isUnauthorized())                               // 401 (R6.8)
         .andExpect(header().string("WWW-Authenticate", containsString("invalid_token"))); // R8.5
 }
@@ -898,7 +901,7 @@ void invalidTokensAreRejectedWith401(@ForAll("invalidTokens") TokenSpec spec) th
 @Property(tries = 100)
 void corsReflectsOnlyAllowedOrigin(@ForAll("origins") String origin) throws Exception {
     // Generator "origins" mixes the single allowed origin with arbitrary other schemes/hosts/ports.
-    var result = mockMvc.perform(options("/api/items")
+    var result = mockMvc.perform(options("/items")
             .header("Origin", origin)
             .header("Access-Control-Request-Method", "GET"))
         .andReturn().getResponse();
@@ -936,7 +939,7 @@ void writeEndpointsRequireAdmin(@ForAll("authoritySets") Set<String> roles) thro
         .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
         .toList();
 
-    var response = mockMvc.perform(post("/api/items")
+    var response = mockMvc.perform(post("/items")
             .with(jwt().authorities(authorities))                 // simulate converted authorities
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"name\":\"x\"}"))
@@ -1100,7 +1103,7 @@ part of the deliverable's instructional intent, not a substitute for the automat
 
 1. Open the Client_App in the browser and sign in so a session is established.
 2. Capture the encoded Access_Token one of two ways:
-   - **Network tab:** open DevTools → **Network**, select an `/api/...` request, and copy the
+   - **Network tab:** open DevTools → **Network**, select an `/entra-backend/...` request, and copy the
      value after `Bearer ` in the request's `Authorization` header; or
    - **Session store:** read `AuthSessionStore.state().accessToken` (e.g., via a debug log or a
      console evaluation of the store) to copy the current token.
@@ -1124,7 +1127,7 @@ part of the deliverable's instructional intent, not a substitute for the automat
    value (R4.2, R4.3, R4.7).
 4. Confirm **request queuing**: issue several API calls simultaneously while a token is near
    expiry and observe that only a **single** token-endpoint call appears in the Network tab while
-   the concurrent `/api/...` calls wait, then all proceed with the refreshed token (R4.4).
+   the concurrent `/entra-backend/...` calls wait, then all proceed with the refreshed token (R4.4).
 
 ### 4. Server-side authority confirmation
 

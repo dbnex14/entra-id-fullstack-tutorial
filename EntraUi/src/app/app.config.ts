@@ -91,7 +91,7 @@ export const appConfig: ApplicationConfig = {
     // ── HttpClient + our CUSTOM functional interceptor ───────────────────────
     // `withInterceptors([authTokenInterceptor])` registers the functional
     // interceptor from auth/auth-token.interceptor.ts into the HttpClient chain.
-    // It is the ONE place bearer tokens are attached to outbound `/api/*` calls,
+    // It is the ONE place bearer tokens are attached to outbound `/entra-backend/*` calls,
     // where proactive refresh happens before a request (R3.4, R4.1), and where a
     // single reactive refresh + retry happens on a 401 expired-token challenge
     // (R3.3).

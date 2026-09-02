@@ -53,8 +53,8 @@ converter is the single place that applies it.
 Method security is enabled (`@EnableMethodSecurity`), and endpoints are gated with
 `@PreAuthorize`:
 
-- `GET /api/items` - `hasAnyRole('Viewer','Admin')`.
-- `POST` / `PUT /api/items` - `hasRole('Admin')`.
+- `GET /entra-backend/items` - `hasAnyRole('Viewer','Admin')`.
+- `POST` / `PUT /entra-backend/items` - `hasRole('Admin')`.
 
 Because `@PreAuthorize` runs before the controller body, a caller lacking the
 required role gets **403** and the method never executes - so a forbidden write
