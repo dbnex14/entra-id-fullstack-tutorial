@@ -114,7 +114,7 @@ import net.jqwik.api.lifecycle.BeforeContainer;
  * {@code @WebMvcTest}/{@code @Autowired} inside a {@code @Property}. Instead a Spring web context is
  * built <b>programmatically</b> once in a {@link BeforeContainer} hook. It imports the <b>real</b>
  * {@link SecurityConfig} filter chain, Spring Boot's {@link SecurityAutoConfiguration} and
- * {@link OAuth2ResourceServerAutoConfiguration}, a {@link ProbeController} mapping {@code /api/items}
+ * {@link OAuth2ResourceServerAutoConfiguration}, a {@link ProbeController} mapping {@code /items}
  * so there is a real protected path to hit, and a {@link SliceTestConfig} that supplies the
  * offline test {@link JwtDecoder} (with the mirrored validator chain), a {@link JwtAuthenticationConverter},
  * and a mirrored {@link CorsConfigurationSource}. {@link MockMvc} is built with
@@ -276,7 +276,7 @@ class InvalidTokenRejectionPropertyTest {
     void invalidTokensAreRejectedWith401(@ForAll("invalidTokens") TokenSpec spec) throws Exception {
         String bearer = buildToken(spec);
 
-        mockMvc.perform(get("/api/items").header("Authorization", "Bearer " + bearer))
+        mockMvc.perform(get("/items").header("Authorization", "Bearer " + bearer))
                 // (R6.8) Every invalid-token dimension maps to 401 Unauthorized.
                 .andExpect(status().isUnauthorized())
                 // (R6.7, R6.8) The bearer challenge advertises error="invalid_token", which is also
@@ -458,7 +458,7 @@ class InvalidTokenRejectionPropertyTest {
      * Root configuration for the programmatically-built web slice. It assembles exactly the pieces
      * needed to route a bearer request through the production security machinery and no more:
      * <ul>
-     *   <li>{@code @EnableWebMvc} &mdash; Spring MVC infrastructure so {@code /api/items} resolves;</li>
+     *   <li>{@code @EnableWebMvc} &mdash; Spring MVC infrastructure so {@code /items} resolves;</li>
      *   <li>{@code @Import(SecurityConfig.class)} &mdash; the <b>real</b> production filter chain,
      *       including {@code oauth2ResourceServer().jwt()} and the default 401 entry point;</li>
      *   <li>{@code @Import} of {@link SecurityAutoConfiguration} and
@@ -468,7 +468,7 @@ class InvalidTokenRejectionPropertyTest {
      *       mirrored validator chain), the {@link JwtAuthenticationConverter}, and the mirrored
      *       {@link CorsConfigurationSource};</li>
      *   <li>{@code @Import(ProbeController.class)} &mdash; a tiny protected controller mapping
-     *       {@code /api/items} so there is a real path to hit. The production {@code ItemController}
+     *       {@code /items} so there is a real path to hit. The production {@code ItemController}
      *       is package-private in another package and cannot be referenced here; a probe is
      *       equivalent for the 401 path because rejection happens in the filter chain, before any
      *       handler runs.</li>
@@ -488,16 +488,16 @@ class InvalidTokenRejectionPropertyTest {
 
     /**
      * A minimal protected REST controller giving the invalid-token requests a real, mapped path
-     * ({@code /api/items}) to target. Its {@code GET} handler is never actually invoked in these
+     * ({@code /items}) to target. Its {@code GET} handler is never actually invoked in these
      * tests: an invalid token is rejected by the resource-server filter with 401 before dispatch, so
      * the handler body never runs. The mapping merely needs to exist and be protected.
      */
     @RestController
-    @RequestMapping("/api/items")
+    @RequestMapping("/items")
     static class ProbeController {
 
         /**
-         * Placeholder read mapping so {@code /api/items} is a registered, authenticated path. Never
+         * Placeholder read mapping so {@code /items} is a registered, authenticated path. Never
          * reached by these tests because every request carries an invalid token (401 first).
          *
          * @return an empty list (unused by these rejection tests)

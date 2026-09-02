@@ -17,7 +17,8 @@ import jakarta.validation.Valid;
 
 /**
  * Role-protected REST controller exposing the sample {@code item} domain resource under
- * {@code /api/items}. This is the outermost application-layer surface of the Resource_Server and the
+ * {@code /items} (served at {@code /entra-backend/items} once the {@code /entra-backend} servlet
+ * context path is applied). This is the outermost application-layer surface of the Resource_Server and the
  * place where the identity that Entra ID minted, and that the security stack has already validated,
  * is finally turned into an authorization decision (R8).
  *
@@ -59,7 +60,7 @@ import jakarta.validation.Valid;
  * values are case-sensitive on both sides, matching the token's claim values.
  */
 @RestController
-@RequestMapping("/api/items")
+@RequestMapping("/items")
 class ItemController {
 
     /**

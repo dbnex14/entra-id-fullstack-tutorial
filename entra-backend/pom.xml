@@ -71,7 +71,7 @@
         <!--
           ==== Web / REST layer ====
           spring-boot-starter-web brings Spring MVC + an embedded Tomcat. This is
-          what exposes the /api/items REST endpoints and turns an incoming HTTP
+          what exposes the /entra-backend/items REST endpoints and turns an incoming HTTP
           request (carrying the "Authorization: Bearer <jwt>" header) into a
           controller invocation. It is the entry point of the token-validation
           pipeline: every protected request arrives through this layer.

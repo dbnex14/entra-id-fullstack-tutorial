@@ -39,12 +39,12 @@ import com.example.entraoauth.security.SecurityConfig;
  * design mandates for the two representative endpoints of the role-protected REST surface (R8),
  * without minting real Entra tokens and without any network access:
  * <ul>
- *   <li><strong>Viewer</strong> ({@code ROLE_Viewer}) &rarr; {@code GET /api/items} returns
- *       <strong>200</strong> (reads are open to Viewer and Admin, R8.1); {@code POST /api/items}
+ *   <li><strong>Viewer</strong> ({@code ROLE_Viewer}) &rarr; {@code GET /items} returns
+ *       <strong>200</strong> (reads are open to Viewer and Admin, R8.1); {@code POST /items}
  *       returns <strong>403</strong> (writes are Admin-only, and method security blocks the
  *       forbidden write before the controller body runs, R8.2/R8.3).</li>
- *   <li><strong>Admin</strong> ({@code ROLE_Admin}) &rarr; {@code GET /api/items} returns
- *       <strong>200</strong> (R8.1); {@code POST /api/items} returns <strong>201</strong>
+ *   <li><strong>Admin</strong> ({@code ROLE_Admin}) &rarr; {@code GET /items} returns
+ *       <strong>200</strong> (R8.1); {@code POST /items} returns <strong>201</strong>
  *       (R8.2).</li>
  *   <li><strong>Anonymous</strong> (no bearer token) &rarr; <strong>401</strong> on both the read
  *       and the write endpoint, because every non-permitted path in {@link SecurityConfig}
@@ -160,12 +160,12 @@ class ItemControllerSecurityTest {
     // ---------------------------------------------------------------------------------------------
 
     /**
-     * A caller holding {@code ROLE_Viewer} may read: {@code GET /api/items} is permitted for both
+     * A caller holding {@code ROLE_Viewer} may read: {@code GET /items} is permitted for both
      * Viewer and Admin (R8.1), so the request reaches the handler and returns 200.
      */
     @Test
     void viewerCanReadItems() throws Exception {
-        mockMvc.perform(get("/api/items")
+        mockMvc.perform(get("/items")
                         // Simulate an authenticated caller whose token's `roles` claim mapped to
                         // ROLE_Viewer (exactly what RolesClaimConverter would produce for role "Viewer").
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_Viewer"))))
@@ -173,13 +173,13 @@ class ItemControllerSecurityTest {
     }
 
     /**
-     * A caller holding only {@code ROLE_Viewer} may <strong>not</strong> write: {@code POST /api/items}
+     * A caller holding only {@code ROLE_Viewer} may <strong>not</strong> write: {@code POST /items}
      * is guarded by {@code @PreAuthorize("hasRole('Admin')")}. Method security rejects the request
      * with 403 <em>before</em> the controller body runs, so no item is created (R8.2, R8.3).
      */
     @Test
     void viewerCannotCreateItem() throws Exception {
-        mockMvc.perform(post("/api/items")
+        mockMvc.perform(post("/items")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_Viewer")))
                         .contentType(MediaType.APPLICATION_JSON)
                         // A structurally valid body (non-blank name) so the 403 is unambiguously an
@@ -194,23 +194,23 @@ class ItemControllerSecurityTest {
 
     /**
      * A caller holding {@code ROLE_Admin} may read: reads are open to Admin as well as Viewer
-     * (R8.1), so {@code GET /api/items} returns 200.
+     * (R8.1), so {@code GET /items} returns 200.
      */
     @Test
     void adminCanReadItems() throws Exception {
-        mockMvc.perform(get("/api/items")
+        mockMvc.perform(get("/items")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_Admin"))))
                 .andExpect(status().isOk());
     }
 
     /**
-     * A caller holding {@code ROLE_Admin} may write: {@code POST /api/items} satisfies
+     * A caller holding {@code ROLE_Admin} may write: {@code POST /items} satisfies
      * {@code hasRole('Admin')}, so the handler runs, delegates to the (stubbed) service, and returns
      * 201 Created (R8.2).
      */
     @Test
     void adminCanCreateItem() throws Exception {
-        mockMvc.perform(post("/api/items")
+        mockMvc.perform(post("/items")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_Admin")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"x\"}"))
@@ -229,7 +229,7 @@ class ItemControllerSecurityTest {
      */
     @Test
     void anonymousReadIsUnauthorized() throws Exception {
-        mockMvc.perform(get("/api/items"))
+        mockMvc.perform(get("/items"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -240,7 +240,7 @@ class ItemControllerSecurityTest {
      */
     @Test
     void anonymousCreateIsUnauthorized() throws Exception {
-        mockMvc.perform(post("/api/items")
+        mockMvc.perform(post("/items")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"x\"}"))
                 .andExpect(status().isUnauthorized());

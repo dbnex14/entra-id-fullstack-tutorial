@@ -18,10 +18,10 @@ import org.springframework.stereotype.Repository;
  * <p><strong>What it backs.</strong> This single interface powers <em>both</em> sides of the
  * role-protected REST surface (R8):
  * <ul>
- *   <li><strong>Read endpoints</strong> ({@code GET /api/items}, permitted for
+ *   <li><strong>Read endpoints</strong> ({@code GET /entra-backend/items}, permitted for
  *       {@code ROLE_Viewer} or {@code ROLE_Admin}) call {@link #findAll()} to project rows into
  *       {@code ItemDto} instances (R8.1).</li>
- *   <li><strong>Write endpoints</strong> ({@code POST}/{@code PUT /api/items}, permitted for
+ *   <li><strong>Write endpoints</strong> ({@code POST}/{@code PUT /entra-backend/items}, permitted for
  *       {@code ROLE_Admin} only) call {@link #save(Object) save(..)} to persist the new/updated
  *       row, with {@code created_by} set from the authenticated principal's token subject
  *       ({@code oid}/{@code sub}) (R8.2).</li>

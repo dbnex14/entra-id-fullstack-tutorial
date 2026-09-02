@@ -22,6 +22,16 @@ server:
   # exactly that one browser origin. Keeping the port explicit makes the
   # frontend<->backend contract unambiguous.
   port: 8080
+  servlet:
+    # CONTEXT PATH: every endpoint this application serves is mounted under
+    # /entra-backend, so the REST surface is http://localhost:8080/entra-backend/items
+    # and the actuator health probe is http://localhost:8080/entra-backend/actuator/health.
+    # Using the application name as the context path (instead of a generic "/api")
+    # makes it unambiguous WHICH application is serving a request when several apps
+    # sit behind the same host/port. Spring Security path matchers and the
+    # controller @RequestMapping values are all evaluated RELATIVE to this context
+    # path, so they use "/items", "/actuator/**", etc. without repeating the prefix.
+    context-path: /entra-backend
 
 spring:
   # ---------------------------------------------------------------------------

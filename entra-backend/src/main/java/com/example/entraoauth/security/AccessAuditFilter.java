@@ -46,9 +46,11 @@ import jakarta.servlet.http.HttpServletResponse;
  *   <li>the final {@link HttpServletResponse#getStatus() response status}.</li>
  * </ul>
  *
- * <p><strong>Scoped to {@code /api/**}.</strong> To avoid noise from health checks, static assets,
- * and other non-API traffic, {@link #shouldNotFilter(HttpServletRequest)} restricts auditing to
- * request paths under {@code /api/}. Everything else is passed straight through with no audit row.
+ * <p><strong>Scoped to {@code /entra-backend/**}.</strong> To avoid noise from static assets and
+ * other traffic outside this application, {@link #shouldNotFilter(HttpServletRequest)} restricts
+ * auditing to request paths under the {@code /entra-backend/} servlet context path. The comparison is
+ * against {@link HttpServletRequest#getRequestURI()}, which includes that context path. Everything
+ * else is passed straight through with no audit row.
  *
  * <p><strong>Auditing must never break the request.</strong> A failure to persist an audit row is a
  * bookkeeping problem, not a user-facing one. The persistence call is therefore wrapped in a
@@ -75,7 +77,7 @@ public class AccessAuditFilter extends OncePerRequestFilter {
      * The path prefix this filter audits. Only requests whose URI starts with this prefix produce an
      * audit row; all other traffic is passed through untouched to avoid noise.
      */
-    private static final String API_PREFIX = "/api/";
+    private static final String API_PREFIX = "/entra-backend/";
 
     /**
      * Placeholder subject recorded when a request reaches this point without an authenticated
@@ -100,10 +102,11 @@ public class AccessAuditFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Restricts auditing to API traffic. Returning {@code true} tells {@link OncePerRequestFilter} to
-     * skip this filter entirely for the given request, so only requests under {@code /api/} are
-     * audited; health probes, static resources, and any other paths are passed through with no audit
-     * row (keeping the {@code access_audit} table focused on the role-protected REST surface).
+     * Restricts auditing to this application's traffic. Returning {@code true} tells
+     * {@link OncePerRequestFilter} to skip this filter entirely for the given request, so only
+     * requests under the {@code /entra-backend/} context path are audited; anything outside it is
+     * passed through with no audit row (keeping the {@code access_audit} table focused on this
+     * application's requests).
      *
      * @param request the incoming request
      * @return {@code true} to skip auditing (non-API path); {@code false} to audit it

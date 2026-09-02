@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 
 /**
  * Request body for updating an existing {@code item} via the Admin-only write endpoint
- * ({@code PUT /api/items/{id}}).
+ * ({@code PUT /entra-backend/items/{id}}).
  *
  * <p><strong>Validated input at the API boundary.</strong> As with creation, {@code name} is
  * annotated {@link NotBlank} (from {@code jakarta.validation}) so an update cannot clear the name to

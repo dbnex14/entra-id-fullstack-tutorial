@@ -50,7 +50,7 @@ import com.example.entraoauth.audit.AccessAuditRepository;
  * <p><strong>Access-audit filter (task 9.2).</strong> This class also wires an
  * {@link AccessAuditFilter} into the chain, positioned <em>after</em> the resource server's
  * {@code BearerTokenAuthenticationFilter} so the authenticated principal is available. That filter is
- * <strong>audit-only</strong> &mdash; it records the outcome of each {@code /api/**} request (subject,
+ * <strong>audit-only</strong> &mdash; it records the outcome of each {@code /entra-backend/**} request (subject,
  * resolved {@code ROLE_*} authorities, method, path, status) for the server-side authority-confirmation
  * verification story, and never makes an authorization decision (R2). It is added <em>only</em> when an
  * {@link AccessAuditRepository} bean is present (resolved via {@link ObjectProvider}), so this config

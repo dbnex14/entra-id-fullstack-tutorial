@@ -89,7 +89,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
  * {@link SecurityConfig} filter chain (which contributes {@code .cors(...)} and the
  * {@code permitAll()} rule for {@code OPTIONS /**}, R5.2), Spring Boot's security and OAuth2
  * resource-server auto-configuration (so the security filter is registered), the {@link ItemController}
- * (so {@code /api/items} is a real mapped path the preflight can target), and the stub/mirror beans.
+ * (so {@code /items} is a real mapped path the preflight can target), and the stub/mirror beans.
  * {@link MockMvc} is then built with {@code apply(springSecurity())} so the security filter chain
  * &mdash; and therefore its CORS processing &mdash; participates in every simulated request.
  * Assertions target response <i>headers</i> only, because a preflight has no body.
@@ -186,7 +186,7 @@ class CorsPropertyTest {
     @Property(tries = 100, generation = GenerationMode.RANDOMIZED)
     void allowedOriginIsReflectedWithCredentials(@ForAll("allowedRequestMethods") String requestedMethod)
             throws Exception {
-        MockHttpServletResponse response = mockMvc.perform(options("/api/items")
+        MockHttpServletResponse response = mockMvc.perform(options("/items")
                         // The Origin header identifies the calling site; this is the one origin the
                         // production policy trusts (mirrored in CorsSliceTestConfig).
                         .header("Origin", ALLOWED_ORIGIN)
@@ -230,7 +230,7 @@ class CorsPropertyTest {
     @Property(tries = 100)
     void disallowedOriginsGetNoAllowOriginHeader(@ForAll("disallowedOrigins") String origin)
             throws Exception {
-        MockHttpServletResponse response = mockMvc.perform(options("/api/items")
+        MockHttpServletResponse response = mockMvc.perform(options("/items")
                         .header("Origin", origin)
                         .header("Access-Control-Request-Method", "GET"))
                 .andReturn().getResponse();
@@ -294,7 +294,7 @@ class CorsPropertyTest {
      * more:
      * <ul>
      *   <li>{@code @EnableWebMvc} &mdash; registers Spring MVC infrastructure (handler mappings,
-     *       the dispatcher wiring) so {@code /api/items} resolves and CORS preflight is processed;</li>
+     *       the dispatcher wiring) so {@code /items} resolves and CORS preflight is processed;</li>
      *   <li>{@code @Import(SecurityConfig.class)} &mdash; the <b>real</b> production filter chain,
      *       including its {@code .cors(...)} registration and {@code OPTIONS /**} {@code permitAll()}
      *       rule (R5.2);</li>
@@ -304,7 +304,7 @@ class CorsPropertyTest {
      *   <li>{@code @Import(CorsSliceTestConfig.class)} &mdash; the offline stub {@link JwtDecoder},
      *       the {@link JwtAuthenticationConverter}, and the mirrored production {@link CorsConfigurationSource};</li>
      *   <li>{@code @Import(ProbeController.class)} &mdash; a tiny public test controller mapping
-     *       {@code /api/items}, so the preflight has a real mapped path to target without dragging in
+     *       {@code /items}, so the preflight has a real mapped path to target without dragging in
      *       the production JPA service/repository layer. The real {@code ItemController} is
      *       package-private in a different package and cannot be referenced from here; a local probe
      *       controller is functionally equivalent for CORS preflight purposes because a preflight is
@@ -325,20 +325,20 @@ class CorsPropertyTest {
 
     /**
      * A minimal public REST controller that exists only to give the CORS preflight a real, mapped
-     * path ({@code /api/items}) to probe. The path deliberately matches the production controller's
+     * path ({@code /items}) to probe. The path deliberately matches the production controller's
      * mapping so the {@code /**} CORS registration and the {@code OPTIONS /**} {@code permitAll()}
      * rule apply exactly as they would in production.
      *
      * <p>Its {@code GET} handler is never invoked by these tests: a CORS preflight is an
      * {@code OPTIONS} request answered by Spring's CORS processor before any handler runs. The
-     * handler is present only so that {@code /api/items} resolves as a known mapping.
+     * handler is present only so that {@code /items} resolves as a known mapping.
      */
     @RestController
-    @RequestMapping("/api/items")
+    @RequestMapping("/items")
     static class ProbeController {
 
         /**
-         * Placeholder read mapping so {@code /api/items} is a registered path. Never called by the
+         * Placeholder read mapping so {@code /items} is a registered path. Never called by the
          * preflight-only tests in this class.
          *
          * @return an empty list (unused by these CORS tests)

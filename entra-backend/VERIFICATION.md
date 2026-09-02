@@ -103,7 +103,7 @@ Capture the encoded token one of two ways:
 **Option A — Network tab (`Authorization: Bearer` header):**
 
 1. Open DevTools → **Network**.
-2. Select a call to the API, e.g. a request to `http://localhost:8080/api/items`.
+2. Select a call to the API, e.g. a request to `http://localhost:8080/entra-backend/items`.
 3. In the **Request Headers**, find `Authorization: Bearer <token>` and copy the value
    *after* `Bearer ` — that is the encoded Access Token.
 
@@ -184,11 +184,11 @@ rotated refresh token in the session store.
 ### Step 4 — Confirm single-call request queuing (single-flight)
 
 Issue several API calls simultaneously while the token is near expiry (for example, load a
-page that fires multiple `http://localhost:8080/api/items` requests at once). Confirm in the
+page that fires multiple `http://localhost:8080/entra-backend/items` requests at once). Confirm in the
 Network tab that:
 
 - **Exactly one** call to the token endpoint appears — not one per API request.
-- The concurrent `/api/...` calls **wait** for that single refresh to complete, then all
+- The concurrent `/entra-backend/...` calls **wait** for that single refresh to complete, then all
   proceed using the freshly refreshed token.
 
 This is the single-flight latch in `TokenRefreshService`: concurrent callers queue behind
@@ -249,7 +249,7 @@ The `access_audit` schema (from `V1__initial_schema.sql`) is:
 | `subject` | `VARCHAR(100)` | Token subject (`oid`/`sub`) that made the request |
 | `authorities` | `TEXT` | Serialized `ROLE_*` set granted for the request |
 | `http_method` | `VARCHAR(10)` | e.g. `GET`, `POST` |
-| `path` | `VARCHAR(300)` | e.g. `/api/items` |
+| `path` | `VARCHAR(300)` | e.g. `/entra-backend/items` |
 | `status` | `INTEGER` | HTTP response status |
 | `occurred_at` | `TIMESTAMPTZ` | When the request occurred |
 
@@ -261,7 +261,7 @@ present), and a Viewer caller's row shows `ROLE_Viewer`.
 Exercise the read (`GET`) and write (`POST`) endpoints with each identity and confirm the
 following matrix:
 
-| Identity | `GET /api/items` (read) | `POST /api/items` (write) |
+| Identity | `GET /entra-backend/items` (read) | `POST /entra-backend/items` (write) |
 | --- | --- | --- |
 | **Anonymous** (no token) | **401** | **401** |
 | **Viewer** | **200** | **403** |
@@ -299,10 +299,10 @@ TOKEN="<paste-the-encoded-access-token-here>"
 
 ```bash
 # GET without a token -> 401
-curl -i http://localhost:8080/api/items
+curl -i http://localhost:8080/entra-backend/items
 
 # POST without a token -> 401
-curl -i -X POST http://localhost:8080/api/items \
+curl -i -X POST http://localhost:8080/entra-backend/items \
   -H "Content-Type: application/json" \
   -d '{"name":"Widget","description":"A sample item"}'
 ```
@@ -311,11 +311,11 @@ curl -i -X POST http://localhost:8080/api/items \
 
 ```bash
 # GET with a Viewer token -> 200
-curl -i http://localhost:8080/api/items \
+curl -i http://localhost:8080/entra-backend/items \
   -H "Authorization: Bearer $TOKEN"
 
 # POST with a Viewer token -> 403 (no mutation)
-curl -i -X POST http://localhost:8080/api/items \
+curl -i -X POST http://localhost:8080/entra-backend/items \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"Widget","description":"A sample item"}'
@@ -325,11 +325,11 @@ curl -i -X POST http://localhost:8080/api/items \
 
 ```bash
 # GET with an Admin token -> 200
-curl -i http://localhost:8080/api/items \
+curl -i http://localhost:8080/entra-backend/items \
   -H "Authorization: Bearer $TOKEN"
 
 # POST with an Admin token -> 201 (item created)
-curl -i -X POST http://localhost:8080/api/items \
+curl -i -X POST http://localhost:8080/entra-backend/items \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"Widget","description":"A sample item"}'

@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 
 /**
  * Request body for creating a new {@code item} via the Admin-only write endpoint
- * ({@code POST /api/items}).
+ * ({@code POST /entra-backend/items}).
  *
  * <p><strong>Validated input at the API boundary.</strong> The {@code name} field is annotated with
  * {@link NotBlank} (from {@code jakarta.validation}), so a request whose {@code name} is {@code null},

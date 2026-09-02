@@ -72,7 +72,7 @@ public class ItemService {
     /**
      * Reads every {@code item} row and projects each into an immutable {@link ItemDto}.
      *
-     * <p>This backs the read endpoint ({@code GET /api/items}), which the controller permits for
+     * <p>This backs the read endpoint ({@code GET /entra-backend/items}), which the controller permits for
      * {@code ROLE_Viewer} or {@code ROLE_Admin} (R8.1). Returning DTOs rather than the JPA entities
      * keeps the persistence-managed {@link Item} objects off the API boundary; the exposed
      * {@code createdBy} lets a reader see which identity created each row.
@@ -88,7 +88,7 @@ public class ItemService {
     /**
      * Creates a new {@code item} owned by the currently authenticated caller.
      *
-     * <p>This backs the write endpoint ({@code POST /api/items}), which the controller permits for
+     * <p>This backs the write endpoint ({@code POST /entra-backend/items}), which the controller permits for
      * {@code ROLE_Admin} only (R8.2). The identity that owns the row is <em>not</em> taken from the
      * request &mdash; it is derived from the validated token subject via
      * {@link #currentSubject()} and written into {@code created_by}. Both timestamps are set to the
@@ -121,7 +121,7 @@ public class ItemService {
     /**
      * Updates the mutable fields of an existing {@code item}.
      *
-     * <p>This backs the write endpoint ({@code PUT /api/items/{id}}), which the controller permits
+     * <p>This backs the write endpoint ({@code PUT /entra-backend/items/{id}}), which the controller permits
      * for {@code ROLE_Admin} only (R8.2, R8.3). If no row exists for {@code id}, a
      * {@link ResponseStatusException} with {@link HttpStatus#NOT_FOUND 404} is thrown so the client
      * receives a clean 404 rather than an opaque error.

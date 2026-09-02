@@ -58,7 +58,7 @@ import net.jqwik.api.lifecycle.BeforeTry;
  * <p><b>Validates: Requirements 8.2, 8.3</b>
  *
  * <h2>What this property says (the design's Correctness Property 4)</h2>
- * <p>For <i>any</i> request to a write endpoint ({@code POST /api/items}) whose granted authorities
+ * <p>For <i>any</i> request to a write endpoint ({@code POST /items}) whose granted authorities
  * do <b>not</b> include {@code ROLE_Admin}, the Resource_Server responds <b>403</b> and performs
  * <b>no</b> data mutation. For <i>any</i> such request whose authorities <b>do</b> include
  * {@code ROLE_Admin}, the response is a success status (<b>200</b>/<b>201</b> &mdash; the real
@@ -202,7 +202,7 @@ class WriteAuthorizationPropertyTest {
 
     /**
      * <b>Property 4.</b> For any generated set of role strings mapped to {@code ROLE_*} authorities,
-     * a {@code POST /api/items} performed as a caller holding those authorities:
+     * a {@code POST /items} performed as a caller holding those authorities:
      * <ul>
      *   <li>if the set contains {@code ROLE_Admin} &rarr; returns <b>201</b> and the item count
      *       increases by exactly one (R8.2, mutation applied);</li>
@@ -235,7 +235,7 @@ class WriteAuthorizationPropertyTest {
         // in for repository.count() from the design's Property 4.
         int before = fakeService.count();
 
-        MockHttpServletResponse response = mockMvc.perform(post("/api/items")
+        MockHttpServletResponse response = mockMvc.perform(post("/items")
                         // Simulate an already-authenticated caller carrying exactly these authorities.
                         // The jwt() post-processor injects a JWT principal so @PreAuthorize can evaluate
                         // hasRole('Admin') against the generated authority set, without token decoding.
@@ -431,7 +431,7 @@ class WriteAuthorizationPropertyTest {
      * needed to route an authenticated {@code POST} through the production authorization machinery
      * and no more:
      * <ul>
-     *   <li>{@code @EnableWebMvc} &mdash; Spring MVC infrastructure so {@code /api/items} resolves
+     *   <li>{@code @EnableWebMvc} &mdash; Spring MVC infrastructure so {@code /items} resolves
      *       and request bodies are bound/validated;</li>
      *   <li>{@code @Import(SecurityConfig.class)} &mdash; the <b>real</b> production filter chain,
      *       critically annotated {@code @EnableMethodSecurity} so the controller's
