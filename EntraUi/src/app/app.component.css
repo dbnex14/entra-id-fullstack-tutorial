@@ -1,0 +1,72 @@
+/* Minimal app-shell styling: a thin top bar and a padded main content area.
+   The routed feature components provide their own internal layout. */
+:host {
+  display: block;
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1f2430;
+}
+
+.app-bar {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.75rem 1.25rem;
+  background: #1f2430;
+  color: #fff;
+}
+
+.app-bar__title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.app-bar__nav {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Push the identity/auth control to the far right of the bar. */
+.app-bar__auth {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: #c9d1e0;
+}
+
+.app-bar__roles {
+  color: #fff;
+  font-weight: 600;
+}
+
+.app-bar__btn {
+  background: #3d6be5;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.app-bar__btn:hover {
+  background: #2f56bf;
+}
+
+.app-bar__nav a {
+  color: #c9d1e0;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.app-bar__nav a.is-active,
+.app-bar__nav a:hover {
+  color: #fff;
+}
+
+.app-main {
+  padding: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}

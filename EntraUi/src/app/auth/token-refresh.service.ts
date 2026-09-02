@@ -262,6 +262,58 @@ export class TokenRefreshService {
   }
 
   /**
+   * Sign the user out — both locally and at Entra ID (a "full" logout).
+   *
+   * Two distinct things are cleared, and the order matters:
+   *
+   *   1. LOCAL SESSION (`store.clear()`): immediately discards the browser-side
+   *      view of the session (access token, expiry, roles) so that, even during
+   *      the brief moment before the redirect below navigates the page away, no
+   *      stale bearer token can be attached to an outbound request. This is the
+   *      same `clear()` the refresh-failure path uses (R3.5 / R4.5), reused here
+   *      for an EXPLICIT, user-initiated logout.
+   *
+   *   2. ENTRA ID SESSION (`msal.instance.logoutRedirect(...)`): performs a
+   *      full-page redirect to the Authority's end-session endpoint so the
+   *      user's session AT ENTRA ID is terminated too. Without this, only the
+   *      SPA would forget the user — the Authority would still hold an active
+   *      SSO session and the very next login would silently sign the same user
+   *      back in with no credential prompt. `logoutRedirect` also purges MSAL's
+   *      own token cache (the origin-scoped localStorage entries, including the
+   *      rotating refresh token) as part of the sign-out.
+   *
+   * `postLogoutRedirectUri` sends the browser back to the SPA origin after the
+   * end-session round-trip completes. Landing on the app root (`/`) funnels the
+   * user through the normal routing: the default route is guarded, so an
+   * unauthenticated visitor is offered login again rather than stranded.
+   *
+   * NOTE: like `beginInteractiveLogin`, this method navigates the whole page
+   * away; any code after the `logoutRedirect` call will not run in this document.
+   */
+  logout(): void {
+    // (1) Drop the local session first so no stale token lingers pre-redirect.
+    this.store.clear();
+
+    // (2) End the Entra ID session and clear MSAL's cache, then return to the
+    //     SPA origin. The account is resolved from MSAL's active/first cached
+    //     account so the correct session is terminated.
+    const account =
+      this.msal.instance.getActiveAccount() ??
+      this.msal.instance.getAllAccounts()[0] ??
+      null;
+
+    this.msal.instance.logoutRedirect({
+      // Target the specific signed-in account when known (avoids an account
+      // picker on multi-account browsers); null lets MSAL pick the session.
+      account,
+      // Where Entra ID returns the browser after the session is ended. Must be a
+      // registered post-logout redirect URI on the app registration; the SPA
+      // origin is the natural choice for a local reference app.
+      postLogoutRedirectUri: window.location.origin,
+    });
+  }
+
+  /**
    * Extract the case-sensitive role values from a successful token result.
    *
    * The Microsoft identity platform v2 endpoint places app roles in the `roles`

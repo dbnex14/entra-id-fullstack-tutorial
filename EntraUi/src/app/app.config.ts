@@ -45,6 +45,8 @@
 
 import {
   ApplicationConfig,
+  inject,
+  provideAppInitializer,
   provideZoneChangeDetection,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
@@ -57,9 +59,11 @@ import {
   MsalGuard,
   MsalBroadcastService,
 } from '@azure/msal-angular';
+import { AuthenticationResult, IPublicClientApplication } from '@azure/msal-browser';
 
 import { routes } from './app.routes';
 import { authTokenInterceptor } from './auth/auth-token.interceptor';
+import { AuthSessionStore } from './auth/auth-session.store';
 import {
   msalInstanceFactory,
   msalGuardConfigFactory,
@@ -116,6 +120,62 @@ export const appConfig: ApplicationConfig = {
     // The singleton PublicClientApplication that performs PKCE, code exchange,
     // silent renewal, and refresh-token rotation. Consumed by MsalService.
     { provide: MSAL_INSTANCE, useFactory: msalInstanceFactory },
+
+    // ── MSAL INITIALIZATION (REQUIRED for msal-browser v5) ────────────────────
+    // In @azure/msal-browser v5 the PublicClientApplication has a MANDATORY,
+    // asynchronous `initialize()` step. Until it resolves, EVERY auth API
+    // (loginRedirect / acquireTokenRedirect / logoutRedirect /
+    // handleRedirectPromise) throws `uninitialized_public_client_application`.
+    // The factory in msal.config.ts only CONSTRUCTS the instance; it does not
+    // initialize it, and nothing else did either — which is why clicking "Sign
+    // in" failed before any network request was made.
+    //
+    // `provideAppInitializer` runs this before the app finishes bootstrapping,
+    // so MSAL is guaranteed ready before the router activates a route, a guard
+    // triggers login, or a button handler calls an auth API. We also run
+    // `handleRedirectPromise()` here so that when the browser lands back on the
+    // app after an Entra redirect, MSAL processes the authorization response
+    // (state validation + code→token exchange) during startup. Returning the
+    // promise makes Angular WAIT for it to settle.
+    provideAppInitializer(() => {
+      const instance = inject<IPublicClientApplication>(MSAL_INSTANCE);
+      const store = inject(AuthSessionStore);
+
+      // initialize() must complete first; only then is handleRedirectPromise()
+      // (and any later interactive call) allowed to run.
+      return instance
+        .initialize()
+        .then(() => instance.handleRedirectPromise())
+        .then((result: AuthenticationResult | null) => {
+          // WHY POPULATE THE STORE HERE (and not only in LoginComponent):
+          // beginInteractiveLogin uses `redirectStartPage: window.location.href`,
+          // so after the Entra round-trip the browser returns to the ORIGINALLY
+          // requested route (e.g. /dashboard) — NOT necessarily /login. The app
+          // initializer is the one place guaranteed to run on every load, so it
+          // is the reliable place to turn a successful redirect result into a
+          // session. handleRedirectPromise() also resolves its result only ONCE
+          // (MSAL caches it), so doing it here avoids a race with LoginComponent.
+          if (result) {
+            const claims = result.idTokenClaims as { roles?: string[] } | undefined;
+            store.setSession(
+              result.accessToken,
+              // MSAL always populates expiresOn on a successful acquisition.
+              result.expiresOn!.getTime(),
+              claims?.roles ?? [],
+            );
+          }
+
+          // No redirect response to process. If MSAL already holds a cached
+          // account from a prior session (localStorage), we do NOT eagerly mint
+          // a token here — the guard/interceptor will drive a silent refresh when
+          // a protected route or request needs one. This keeps bootstrap fast and
+          // avoids surprising network calls before the user acts.
+        })
+        // Swallow errors here so a redirect-handling failure cannot abort
+        // bootstrap. Interactive failures still surface to the user when they
+        // next trigger login (LoginComponent owns that error UI per R1.6/1.9/1.10).
+        .catch((err) => console.error('MSAL initialization error:', err));
+    }),
 
     // How/with-what-scopes to start interactive login (redirect flow) when a
     // guard triggers sign-in for an unauthenticated user (R1.3).

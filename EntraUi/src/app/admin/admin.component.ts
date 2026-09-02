@@ -37,9 +37,9 @@
 //    non-Admin from reaching this screen, the 403 handling below is what actually
 //    protects the write — and is the behavior the design requires us to surface.
 
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-// FormsModule provides `[(ngModel)]` two-way binding for the simple create form.
+// FormsModule provides `[(ngModel)]` two-way binding for the create/edit forms.
 // It must be imported into this standalone component's `imports` array to use
 // ngModel in the template.
 import { FormsModule } from '@angular/forms';
@@ -59,6 +59,17 @@ const API_BASE_URL = 'http://localhost:8080';
  * `name` is required and `description` is optional.
  */
 interface CreateItemRequest {
+  name: string;
+  description?: string;
+}
+
+/**
+ * The request body accepted by the backend update endpoint
+ * ({@code PUT /entra-backend/items/{id}}). Mirrors the Java `UpdateItemRequest`
+ * record (`@NotBlank String name`, `String description`) — same shape as the
+ * create body: `name` is required, `description` is optional.
+ */
+interface UpdateItemRequest {
   name: string;
   description?: string;
 }
@@ -143,10 +154,88 @@ interface CreateItemRequest {
           {{ errorMessage() }}
         </div>
       }
+
+      <!--
+        ── EDIT EXISTING ITEM (PUT /entra-backend/items/{id}) ─────────────────
+        Exercises the Admin-only UPDATE endpoint. We first GET the current items
+        so the admin can pick one, load it into the edit form, change the fields,
+        and PUT the update. As with create, the server independently enforces
+        the Admin role — a non-Admin token gets 403 with no mutation (R8.3).
+      -->
+      <header class="admin__header">
+        <h2>Edit item (Admin)</h2>
+        <button type="button" (click)="loadItems()" [disabled]="loadingItems()">
+          @if (loadingItems()) { Loading… } @else { Refresh list }
+        </button>
+      </header>
+
+      @if (items().length > 0) {
+        <ul class="admin__item-list">
+          @for (item of items(); track item.id) {
+            <li class="admin__item-row">
+              <span>#{{ item.id }} — {{ item.name }}</span>
+              <button type="button" (click)="beginEdit(item)">Edit</button>
+            </li>
+          }
+        </ul>
+      } @else if (!loadingItems()) {
+        <p class="admin__status admin__status--empty" role="status">
+          No items to edit yet. Create one above, then Refresh list.
+        </p>
+      }
+
+      <!-- The edit form only appears once an item is selected via "Edit". -->
+      @if (editingId() !== null) {
+        <form class="admin__form" (ngSubmit)="saveEdit()">
+          <p>Editing item #{{ editingId() }}</p>
+
+          <label class="admin__field">
+            <span>Name</span>
+            <input
+              name="editName"
+              type="text"
+              [ngModel]="editName()"
+              (ngModelChange)="editName.set($event)"
+              required
+            />
+          </label>
+
+          <label class="admin__field">
+            <span>Description</span>
+            <input
+              name="editDescription"
+              type="text"
+              [ngModel]="editDescription()"
+              (ngModelChange)="editDescription.set($event)"
+            />
+          </label>
+
+          <div class="admin__form-actions">
+            <button type="submit" [disabled]="saving() || editName().trim().length === 0">
+              @if (saving()) { Saving… } @else { Save changes }
+            </button>
+            <button type="button" (click)="cancelEdit()" [disabled]="saving()">Cancel</button>
+          </div>
+        </form>
+      }
+
+      <!-- SUCCESS: the 200 response body from a successful update (R8.2). -->
+      @if (updated(); as item) {
+        <div class="admin__status admin__status--success" role="status">
+          Updated item #{{ item.id }} — "{{ item.name }}".
+        </div>
+      }
+
+      <!-- ERROR: update-specific failure, including the Admin-required 403. -->
+      @if (editErrorMessage()) {
+        <div class="admin__status admin__status--error" role="alert">
+          {{ editErrorMessage() }}
+        </div>
+      }
     </section>
   `,
 })
-export class AdminComponent {
+export class AdminComponent implements OnInit {
   // ── Dependencies (Angular 19 inject() DI convention) ──────────────────────
 
   /**
@@ -181,10 +270,45 @@ export class AdminComponent {
   /** Human-readable error message, including the Admin-required 403 case. */
   readonly errorMessage = signal<string>('');
 
+  // ── Edit (update) state (signals) ──────────────────────────────────────────
+
+  /** The current list of items to choose from, loaded via GET. */
+  readonly items = signal<ItemDto[]>([]);
+
+  /** True while the GET that populates the edit list is in flight. */
+  readonly loadingItems = signal<boolean>(false);
+
+  /** The id of the item currently being edited, or null when no edit is active. */
+  readonly editingId = signal<number | null>(null);
+
+  /** Bound to the edit form's "name" input (required, backend `@NotBlank`). */
+  readonly editName = signal<string>('');
+
+  /** Bound to the edit form's optional "description" input. */
+  readonly editDescription = signal<string>('');
+
+  /** True while the PUT /entra-backend/items/{id} request is in flight. */
+  readonly saving = signal<boolean>(false);
+
+  /** The item returned by a successful 200 update, or null before/failure. */
+  readonly updated = signal<ItemDto | null>(null);
+
+  /** Human-readable error message for the update flow, including 403. */
+  readonly editErrorMessage = signal<string>('');
+
   // ── Convenience read-throughs to the session store (for the template) ─────
 
   /** Whether a session is currently authenticated (drives the identity banner). */
   readonly isAuthenticated = this.store.isAuthenticated;
+
+  /**
+   * Load the current items once when the component initializes so the edit list
+   * is populated. The route is guarded by authGuard + roleGuard(['Admin']), so a
+   * token is present by the time this runs.
+   */
+  ngOnInit(): void {
+    this.loadItems();
+  }
 
   /**
    * Submit the create form: POST the new item to the Admin-only write endpoint.
@@ -234,6 +358,103 @@ export class AdminComponent {
         this.submitting.set(false);
       },
     });
+  }
+
+  /**
+   * Load the item list from the backend read endpoint so the admin can pick one
+   * to edit. Reads are open to Viewer and Admin, so an Admin token always sees
+   * the list. The bearer token is attached by the interceptor.
+   */
+  loadItems(): void {
+    this.loadingItems.set(true);
+    this.http.get<ItemDto[]>(`${API_BASE_URL}/entra-backend/items`).subscribe({
+      next: (loaded) => {
+        this.items.set(loaded);
+        this.loadingItems.set(false);
+      },
+      error: () => {
+        // A failure to load the edit list is non-fatal to the create flow; show
+        // it in the edit-error slot and leave the list empty.
+        this.editErrorMessage.set('Could not load items to edit. Please try Refresh list.');
+        this.loadingItems.set(false);
+      },
+    });
+  }
+
+  /**
+   * Load a selected item into the edit form. Copies its current name/description
+   * into the edit signals and records which id is being edited so `saveEdit`
+   * knows the target of the PUT.
+   */
+  beginEdit(item: ItemDto): void {
+    this.editingId.set(item.id);
+    this.editName.set(item.name);
+    this.editDescription.set(item.description ?? '');
+    // Clear any prior update result/error so the form starts clean.
+    this.updated.set(null);
+    this.editErrorMessage.set('');
+  }
+
+  /**
+   * Abandon the in-progress edit and hide the edit form without contacting the
+   * server.
+   */
+  cancelEdit(): void {
+    this.editingId.set(null);
+    this.editName.set('');
+    this.editDescription.set('');
+  }
+
+  /**
+   * Save the current edit: PUT the changed item to the Admin-only update
+   * endpoint (`PUT /entra-backend/items/{id}`).
+   *
+   * The bearer token is attached by the interceptor. We react to the outcome:
+   *   - 200 OK -> render the returned item, refresh the list, close the form.
+   *   - 403    -> "not authorized (Admin required)"; server refused, no mutation
+   *               (R8.3).
+   *   - other  -> generic failure message.
+   */
+  saveEdit(): void {
+    const id = this.editingId();
+    if (id === null) {
+      return;
+    }
+
+    // Guard against clearing the required name (mirrors backend `@NotBlank`).
+    const trimmedName = this.editName().trim();
+    if (trimmedName.length === 0) {
+      this.editErrorMessage.set('Name is required.');
+      return;
+    }
+
+    this.saving.set(true);
+    this.updated.set(null);
+    this.editErrorMessage.set('');
+
+    const body: UpdateItemRequest = {
+      name: trimmedName,
+      description: this.editDescription().trim() || undefined,
+    };
+
+    // PUT to the Admin-only endpoint. `hasRole('Admin')` on the server decides
+    // whether this becomes a 200 or a 403 — the client cannot self-authorize.
+    this.http
+      .put<ItemDto>(`${API_BASE_URL}/entra-backend/items/${id}`, body)
+      .subscribe({
+        next: (item) => {
+          // 200 path (Admin token accepted, R8.2): show it, refresh the list so
+          // the change is visible, and close the edit form.
+          this.updated.set(item);
+          this.saving.set(false);
+          this.cancelEdit();
+          this.loadItems();
+        },
+        error: (err: HttpErrorResponse) => {
+          this.editErrorMessage.set(this.toWriteErrorMessage(err));
+          this.saving.set(false);
+        },
+      });
   }
 
   /**
