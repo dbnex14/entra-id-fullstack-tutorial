@@ -54,12 +54,12 @@ Method security is enabled (`@EnableMethodSecurity`), and endpoints are gated wi
 `@PreAuthorize`:
 
 - `GET /entra-backend/items` - `hasAnyRole('Viewer','Admin')`.
-- `POST` / `PUT /entra-backend/items` - `hasRole('Admin')`.
+- `POST` / `PUT` / `DELETE /entra-backend/items` - `hasRole('Admin')`.
 
 Because `@PreAuthorize` runs before the controller body, a caller lacking the
-required role gets **403** and the method never executes - so a forbidden write
-performs no mutation. This "no mutation on 403" property is directly tested (see
-`WriteAuthorizationPropertyTest`).
+required role gets **403** and the method never executes - so a forbidden write or
+delete performs no mutation. This "no mutation on 403" property is directly tested
+(see `WriteAuthorizationPropertyTest`).
 
 ## Stateless sessions
 
@@ -105,6 +105,20 @@ user into a screen whose every call would 403. It reads roles from client memory
 which a user can trivially alter. It is defense in depth, not the boundary - the
 backend independently re-validates the token and enforces `hasRole('Admin')` on
 every call. Never rely on the client guard for protection.
+
+The same "UX only" caveat applies to **hiding the Admin nav link** for non-Admins
+in the header: it is a convenience so Viewers are not shown a page they cannot
+use, but it hides nothing security-relevant. The `/admin` route guard and the
+backend role checks are the actual gate.
+
+## Sign-out
+
+Sign-out is a *full* logout: the app clears the local signal session first (so no
+stale token can be attached during the redirect) and then calls MSAL
+`logoutRedirect`, which ends the Entra session, clears MSAL's origin-scoped cache
+(including the rotating refresh token), and returns to the app origin. Clearing
+only the local session would leave the Entra SSO session active and let the next
+sign-in silently re-authenticate the same user without a prompt.
 
 ## PKCE and the public client
 

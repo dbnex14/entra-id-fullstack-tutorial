@@ -159,3 +159,14 @@ network inspection.
 3. WHEN a request bearing a valid Access_Token with only Spring_Authority `ROLE_Viewer` targets a write endpoint, THE Resource_Server SHALL respond with HTTP status 403 and SHALL NOT modify any persisted data.
 4. IF a request to a protected endpoint carries no Access_Token, THEN THE Resource_Server SHALL respond with HTTP status 401.
 5. IF a request to a protected endpoint carries an Access_Token that is expired, malformed, or fails signature validation, THEN THE Resource_Server SHALL respond with HTTP status 401 and SHALL NOT process the requested operation.
+6. WHEN a request bearing a valid Access_Token with Spring_Authority `ROLE_Admin` targets the delete endpoint (`DELETE /entra-backend/items/{id}`), THE Resource_Server SHALL delete the item and respond with HTTP status 204; a caller with only `ROLE_Viewer` SHALL receive 403 with no row removed, and a request for a non-existent id SHALL receive 404.
+
+### Requirement 9: Session Lifecycle and Application Shell (Client)
+
+**User Story:** As a user, I want a clear landing page and explicit sign-in/sign-out controls, so that I choose when to authenticate and can end my session.
+
+#### Acceptance Criteria
+
+1. WHEN a user requests sign-out, THE Client_App SHALL clear the local session state AND end the Entra_ID session via a logout redirect, then return the browser to the application origin.
+2. WHEN an unauthenticated user opens the application root or an unrecognized route, THE Client_App SHALL display a public landing page and SHALL NOT initiate authentication until the user requests it.
+3. WHILE a session is authenticated, THE Client_App SHALL display the current roles and navigation appropriate to those roles, showing the Admin area only to users whose session carries the `Admin` role (a client-side convenience; the Resource_Server remains authoritative).

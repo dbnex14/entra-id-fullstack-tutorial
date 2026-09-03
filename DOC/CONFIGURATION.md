@@ -43,6 +43,33 @@ The `jwk-set-uri` override is present but commented out - OIDC discovery from
 `issuer-uri` derives the JWKS URI automatically; uncomment only if discovery is
 unavailable in your network.
 
+## Access token version (v2) - REQUIRED
+
+The backend is configured for the Entra **v2.0** issuer
+(`https://login.microsoftonline.com/<tenant>/v2.0`). For token validation to
+succeed, the Entra app registration MUST issue **v2** access tokens; otherwise
+Entra issues **v1** tokens whose issuer is `https://sts.windows.net/<tenant>/`
+(note: no `/v2.0`) and the backend rejects them with **401** even though the user
+signed in successfully and the token carries the right audience and roles.
+
+Set this on the app registration:
+
+1. Entra admin center -> App registrations -> your app -> **Manage -> Manifest**.
+2. Set `"requestedAccessTokenVersion": 2` (it defaults to `null`, which means v1
+   for the access token). Save.
+3. Sign out and sign in again so a fresh v2 token is minted (cached v1 tokens are
+   not upgraded automatically).
+
+How to confirm: decode the access token at https://jwt.ms and check
+`"ver": "2.0"` and `"iss": "https://login.microsoftonline.com/<tenant>/v2.0"`.
+A `"ver": "1.0"` / `sts.windows.net` issuer is the classic cause of a
+"signed in but every API call returns 401" symptom.
+
+(Alternative, not recommended: point the backend `issuer-uri` at the v1 issuer
+`https://sts.windows.net/<tenant>/` to match v1 tokens. The whole app, MSAL
+config, and docs assume v2, so fixing the manifest to v2 keeps everything
+consistent.)
+
 ## Frontend configuration (msal.config.ts)
 
 File: `EntraUi/src/app/auth/msal.config.ts`
@@ -60,6 +87,32 @@ File: `EntraUi/src/app/auth/msal.config.ts`
 
 `API_SCOPE` and `AUTHORITY` are derived from `CLIENT_ID`/`TENANT_ID`, so changing
 the two ids updates everything consistently.
+
+### MSAL initialization (app initializer)
+
+`@azure/msal-browser` v5 requires an asynchronous `initialize()` call before any
+auth API (login/logout/redirect handling); calling one first throws
+`uninitialized_public_client_application`. `app.config.ts` registers a
+`provideAppInitializer` that awaits `instance.initialize()` and then
+`handleRedirectPromise()` during bootstrap, populating the session store from a
+successful redirect result. This runs before the router/guards, so auth calls are
+always made against an initialized MSAL instance.
+
+### Frontend routes and app shell
+
+| Route | Guard | Purpose |
+| --- | --- | --- |
+| `/home` | none (public) | Landing page; default target of `''` and unknown URLs |
+| `/login` | none | Redirect/callback handler |
+| `/dashboard` | `authGuard` | Item list (Viewer or Admin) |
+| `/admin` | `authGuard` + `roleGuard(['Admin'])` | Create / edit / delete items (Admin) |
+
+The app is titled **"Item Manager"** (header and `index.html` title). The header
+shows a **Sign in** control when signed out and **Sign out** + the current roles
+when signed in; nav links appear only when authenticated, and the **Admin** link
+only for users holding the `Admin` role (UX only - route guards and the backend
+remain authoritative). The public `/home` route is what prevents opening the app
+root (or returning after logout) from forcing an immediate login redirect.
 
 ## Behavioral constants worth knowing
 
@@ -92,9 +145,48 @@ To point the app at a different Entra tenant/app:
 3. Ensure the Entra app registration is a **Single-page application** with
    redirect URI `http://localhost:4200`, exposes the `access_as_user` scope, and
    defines app roles `Admin` and `Viewer` assigned to your test users.
-4. Restart the backend (config change) and let the frontend rebuild.
+4. Set `"requestedAccessTokenVersion": 2` in the app manifest (see "Access token
+   version" above) so the backend accepts the tokens.
+5. Restart the backend (config change) and let the frontend rebuild.
 
 Full app-registration steps are in `GUIDE/RUNNING-MAC-GUIDE.md` Section 8.
+
+## Sign-out (post-logout redirect)
+
+Sign-out clears the local session and calls MSAL `logoutRedirect` with
+`postLogoutRedirectUri: window.location.origin` (`http://localhost:4200`), which
+ends the Entra session and returns the browser to the app. For a SPA, Entra
+validates that post-logout URI against the **Redirect URIs** already listed under
+the app registration's **Single-page application** platform - there is no separate
+"post logout URI" box. So having `http://localhost:4200` in that SPA redirect-URI
+list (which login needs anyway) is what makes sign-out land back on the app. The
+separate **Front-channel logout URL** field is only for single-sign-out
+notifications and is not needed here.
+
+## Testing the Viewer role (creating a second user)
+
+The role split (Viewer can read; Admin can read + write/delete) is driven purely
+by the token's `roles` claim, which comes from Entra **app role assignments**. To
+exercise the Viewer path you need an identity assigned the `Viewer` role only.
+
+1. **Create a user** (if the tenant has only your Admin account): Entra admin
+   center -> **Identity -> Users -> All users -> + New user -> Create new user**.
+   Set a user principal name (e.g. `viewer@<tenant>.onmicrosoft.com`), a display
+   name, and a password you control. A newly created user is prompted to change
+   the password on first sign-in.
+2. **Assign the Viewer role** (done on the Enterprise application, not the
+   registration): **Identity -> Applications -> Enterprise applications ->** your
+   app **-> Manage -> Users and groups -> + Add user/group**. Pick the user, set
+   the role to **Viewer**, Assign.
+3. **Sign in as the Viewer.** Sign out of the current session first and use an
+   incognito window (so a cached Admin token is not reused), then sign in as the
+   Viewer. App role changes only appear in a newly minted token, so a fresh
+   sign-in is required.
+4. **Expected result:** header shows `roles: Viewer`; the Dashboard lists items
+   (200); the **Admin** nav link is hidden; a direct write/delete would return 403.
+
+Alternatively, invite an external email as a guest
+(**Users -> + New user -> Invite external user**) and assign it the Viewer role.
 
 ## Ports and origins summary
 

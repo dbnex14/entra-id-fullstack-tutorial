@@ -247,6 +247,40 @@ no shorthand, no elided lines, no `// ...` placeholders. Frontend code MUST use 
 - [x] 10. Final checkpoint - full stack
   - Ensure all backend and frontend tests pass, ask the user if questions arise.
 
+- [x] 11. Post-MVP enhancements: MSAL init, sign-out, public landing, UI polish, DELETE
+  - [x] 11.1 Initialize MSAL before any auth call `EntraUi/src/app/app.config.ts`
+    - Add a `provideAppInitializer` that awaits `MSAL_INSTANCE.initialize()` then `handleRedirectPromise()` and populates the session store from a successful redirect result.
+    - Rationale: `@azure/msal-browser` v5 requires an async `initialize()`; without it every auth API throws `uninitialized_public_client_application`. Centralizing redirect handling here (it always runs) reliably establishes the session regardless of the landing route.
+    - _Requirements: 1.4, 1.5_
+
+  - [x] 11.2 Add full sign-out `EntraUi/src/app/auth/token-refresh.service.ts`
+    - Implement `logout()` that clears the local session store then calls `msal.instance.logoutRedirect({ account, postLogoutRedirectUri: window.location.origin })` to end the Entra session and clear MSAL's cache.
+    - _Requirements: 9.1_
+
+  - [x] 11.3 Add a public landing route `EntraUi/src/app/home/home.component.ts` + `app.routes.ts`
+    - Add an UNGUARDED `/home` page; point `''` and `**` at `/home` so opening the app root (or returning after logout) does not force an automatic login.
+    - _Requirements: 9.2_
+
+  - [x] 11.4 App shell: rename, sign-in/out control, role-based nav `EntraUi/src/app/app.component.*`
+    - Title the app "Item Manager" (header + `index.html`); show Sign in when signed out and Sign out + roles when signed in; show nav only when authenticated and the Admin link only for Admins.
+    - _Requirements: 9.1, 9.3_
+
+  - [x] 11.5 Admin edit + delete UI `EntraUi/src/app/admin/admin.component.ts`
+    - Add an editable item list (loads via GET), an edit form issuing `PUT /items/{id}`, and a per-row Delete button (with confirm) issuing `DELETE /items/{id}`.
+    - _Requirements: 8.2, 8.6_
+
+  - [x] 11.6 Backend DELETE endpoint `ItemService.java`, `ItemController.java`
+    - `ItemService.delete(long id)` throws 404 if the row is absent, else removes it; `ItemController` `DELETE /items/{id}` `@PreAuthorize("hasRole('Admin')")` returns 204 No Content.
+    - _Requirements: 8.6_
+
+  - [x] 11.7 Global design system `EntraUi/src/styles.css`, `app.component.css`
+    - Add design tokens and styles for header, cards, buttons, forms, tables, and status banners; replace the default Angular starter shell.
+    - _Requirements: 9.3_
+
+  - [x] 11.8 Entra app-registration alignment (operational, not code)
+    - Set `requestedAccessTokenVersion: 2` in the app manifest so Entra issues v2 access tokens matching the backend's `/v2.0` issuer (otherwise valid sign-ins yield 401). Assign `Admin`/`Viewer` app roles to test users. See `DOC/CONFIGURATION.md`.
+    - _Requirements: 6.5_
+
 ## Notes
 
 - Tasks marked with `*` are optional test sub-tasks and can be skipped for a faster MVP; core implementation tasks are never optional.

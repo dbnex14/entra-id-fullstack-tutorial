@@ -40,7 +40,8 @@ A layered Spring Boot resource server:
 - **Domain layer** (`item/`)
   - `Item` (JPA entity), `ItemDto`, `CreateItemRequest`, `UpdateItemRequest`.
   - `ItemRepository` (Spring Data JPA), `ItemService` (business logic + stamps the
-    token subject onto rows), `ItemController` (role-protected REST endpoints).
+    token subject onto rows), `ItemController` (role-protected REST endpoints:
+    GET read for Viewer/Admin; POST/PUT/DELETE for Admin, DELETE returning 204).
 - **Audit layer** (`audit/`)
   - `AccessAudit` entity + `AccessAuditRepository`.
 - **Persistence**
@@ -74,24 +75,43 @@ An Angular 19 standalone SPA (no NgModules; `inject()` DI and signals throughout
     reactive refresh.
   - `auth.guard.ts` - `authGuard` (session gate) and `roleGuard` (client-side UX
     gate; the server remains authoritative).
-- **Feature components** (`app/{login,dashboard,admin}/`)
+- **Feature components** (`app/{home,login,dashboard,admin}/`)
+  - `home` is the public (unguarded) landing page - the default route and the
+    post-logout destination, so opening the app root never forces a login.
   - `login` handles the redirect callback and session establishment.
-  - `dashboard` reads `/entra-backend/items`; `admin` performs the Admin-only write.
+  - `dashboard` reads `/entra-backend/items`; `admin` performs the Admin-only
+    writes: create (POST), edit (PUT), and delete (DELETE) with a confirm prompt.
+- **App shell** (`app/app.component.*`)
+  - "Item Manager" header with role-based nav (Admin link only for Admins),
+    plus a Sign in / Sign out control and the current roles.
 - **Composition** (`app/app.config.ts`, `app/app.routes.ts`)
-  - Providers wire the router, HttpClient + custom interceptor, and MSAL.
+  - Providers wire the router, HttpClient + custom interceptor, and MSAL, and a
+    `provideAppInitializer` that initializes MSAL (v5 requires an async
+    `initialize()`) and processes any redirect result before the app renders.
 
 ## Request flows
 
 ### Login (interactive)
 
-1. User navigates to a guarded route while unauthenticated.
-2. `authGuard` saves the intended URL under `sessionStorage['postLoginRedirect']`
-   and calls `beginInteractiveLogin()`.
-3. MSAL redirects to Entra ID (with PKCE code_challenge, state, nonce).
-4. User authenticates/consents; Entra redirects back to `http://localhost:4200`.
-5. The login component's `handleRedirectPromise()` validates `state`, detects
-   `error` params, and (on success) exchanges the code for tokens.
-6. The session store is populated; the app navigates to the saved route.
+1. User clicks **Sign in** in the header, or navigates to a guarded route while
+   unauthenticated (which makes `authGuard` save the intended URL under
+   `sessionStorage['postLoginRedirect']` and call `beginInteractiveLogin()`).
+2. MSAL redirects to Entra ID (with PKCE code_challenge, state, nonce).
+3. User authenticates/consents; Entra redirects back to `http://localhost:4200`.
+4. On reload, the `provideAppInitializer` runs `handleRedirectPromise()` (after
+   `initialize()`), which validates `state`, detects `error` params, and on
+   success exchanges the code for tokens and populates the session store. Because
+   the initializer always runs regardless of the landing route, it - not just the
+   login component - reliably establishes the session.
+5. The app navigates to the saved route (or the default landing route).
+
+### Logout
+
+1. User clicks **Sign out** in the header.
+2. The app clears the local session store, then calls MSAL `logoutRedirect` with
+   `postLogoutRedirectUri = window.location.origin`.
+3. Entra ends the SSO session and clears MSAL's origin-scoped cache, then returns
+   the browser to the app, landing on the public `/home` page.
 
 ### Authenticated API call
 
