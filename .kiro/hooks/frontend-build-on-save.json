@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Frontend: lint/build on save",
+      "trigger": "PostFileSave",
+      "matcher": "EntraUi/.*\\.(ts|html|css)$",
+      "description": "Targets EntraUi (Angular 19). Fires when a TypeScript, template, or stylesheet file under EntraUi/ is saved. This project uses plain CSS (src/styles.css and component .css files), not SCSS, so the matcher targets .css. Runs the Angular build to surface compile/template/type errors early. NOTE: this project has no `lint` npm script and no ESLint config, so we run the existing `build` script (ng build) instead of `ng lint`. PostFileSave matchers are tested against the FILE PATH.",
+      "action": {
+        "type": "command",
+        "command": "npm --prefix EntraUi run build"
+      }
+    }
+  ]
+}

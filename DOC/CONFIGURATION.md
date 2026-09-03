@@ -210,3 +210,13 @@ There is no client secret in this system. The SPA is a public client using PKCE,
 and the backend only validates tokens - it never calls Entra with a secret. The
 only "credentials" in config are the local PostgreSQL `postgres`/`postgres`, which
 are for local development only.
+
+## Developer workflow automation (Kiro Agent Hooks)
+
+This repo also ships Kiro Agent Hooks under `.kiro/hooks/` that automate
+build/test on save, per-file code review, docs-freshness reminders, and security
+and Flyway migration guards. They are configured per app (`entra-backend/` vs
+`EntraUi/`) and only run inside Kiro IDE, so treat them as a per-developer
+convenience rather than shared configuration. See `DOC/AGENT-HOOKS.md` for the
+full catalog and the IDE-agnostic enforcement (Git hooks + CI) that should be the
+team baseline.

@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Backend: Flyway migration guard",
+      "trigger": "PreToolUse",
+      "matcher": "fs_write|str_replace|fs_append",
+      "description": "Targets entra-backend (Spring Boot). Fires BEFORE any write tool. NOTE: PreToolUse matchers are tested against the TOOL NAME (not the file path), so this matches the write tools and the path filtering happens inside the prompt. Enforces immutable, forward-only Flyway migrations.",
+      "action": {
+        "type": "agent",
+        "prompt": "A write tool (fs_write/str_replace/fs_append) is about to run. Inspect the target file PATH in the tool input. This guard only applies to Flyway migration files under entra-backend/src/main/resources/db/migration/.\n\nIf the path is NOT under that migration directory, do nothing and let the write proceed silently.\n\nIf the path IS an EXISTING versioned migration matching V<n>__<description>.sql (for example V1__initial_schema.sql), STOP. Applied Flyway migrations are immutable: editing them changes their checksum and makes 'flyway validate' fail on every environment where the old version was already applied, which breaks startup. Do NOT edit the existing file. Instead, instruct the creation of a NEW migration with the next incrementing version number (e.g. V2__<description>.sql, V3__..., using a clear snake_case description) that ALTERs/adds what is needed. Only creating a brand-new, higher-versioned migration file is allowed; modifying or deleting an existing one is not.\n\nIf the path is a NEW migration file whose version number is higher than all existing ones and does not collide, allow it and briefly confirm the naming (V<n>__<description>.sql) and forward-only intent. This is an advisory review; enforce the forward-only rule strictly but explain it clearly since this is a learning repo."
+      }
+    }
+  ]
+}

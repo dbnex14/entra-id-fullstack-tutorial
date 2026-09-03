@@ -153,3 +153,13 @@ rate limiting, security headers (HSTS, CSP) at the edge, restricting the JWKS
 refresh cadence, structured audit log shipping, TLS everywhere (the localhost
 setup is HTTP), and per-environment identity constants rather than in-code values
 (see `DOC/CONFIGURATION.md`).
+
+## Guarding security-critical changes
+
+A Kiro Agent Hook (`Backend: security-change guard`) flags edits to
+`SecurityConfig.java`, `application.yml`, and the backend `security/` package so
+that changes to auth, CORS, audience, issuer, or token validation get a
+deliberate second look. The frontend code-review hook similarly watches for token
+mishandling and XSS. These run only inside Kiro IDE and are advisory; the
+authoritative checks are the security property tests plus CI. See
+`DOC/AGENT-HOOKS.md`.

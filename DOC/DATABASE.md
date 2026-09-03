@@ -125,3 +125,11 @@ createdb my_workspace          # database only; tables are created by Flyway
 On macOS with Homebrew Postgres, you may also need to create the `postgres` role
 (see `GUIDE/RUNNING-MAC-GUIDE.md`). Connection settings live in
 `application.yml` (see `DOC/CONFIGURATION.md`).
+
+## Guarding the forward-only migration rule
+
+Because applied Flyway migrations are immutable (editing one changes its checksum
+and breaks `flyway validate`), a Kiro Agent Hook (`Backend: Flyway migration
+guard`) warns against editing an existing `V*__*.sql` file and steers changes into
+a new, higher-numbered migration. That hook only runs inside Kiro IDE, so the
+team-wide equivalent is `flyway validate` in CI. See `DOC/AGENT-HOOKS.md`.

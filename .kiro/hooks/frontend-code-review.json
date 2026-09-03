@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Frontend: code review on changed TS/templates",
+      "trigger": "PostFileSave",
+      "matcher": "EntraUi/.*\\.(ts|html)$",
+      "description": "Targets EntraUi (Angular 19). Fires when a TypeScript file or HTML template under EntraUi/ is saved. Asks the agent to review it for correctness, bugs, security (token handling / XSS), and Angular conventions. PostFileSave matchers are tested against the FILE PATH.",
+      "action": {
+        "type": "agent",
+        "prompt": "An Angular TypeScript file or HTML template under EntraUi/ was just saved. Perform a focused review of ONLY that file. This is a learning/tutorial repo, so favor clear, teaching-oriented feedback.\n\nReview for:\n1. Correctness & bugs: RxJS subscription leaks (prefer async pipe or takeUntilDestroyed), change-detection pitfalls, unhandled observable errors, incorrect typing (avoid 'any'), template bindings referencing missing members.\n2. Security - token handling: access tokens are managed by MSAL (@azure/msal-angular / msal-browser); never store tokens in localStorage/sessionStorage yourself, never log them, and never put them in URLs. Confirm the MSAL interceptor attaches bearer tokens only to the configured backend API origin, not to third-party URLs.\n3. Security - XSS: avoid bypassSecurityTrustHtml / innerHTML with untrusted data; rely on Angular's built-in contextual escaping; be cautious with dynamic URLs/hrefs.\n4. Angular 19 conventions: standalone components, typed reactive forms, inject() or constructor DI, OnPush where sensible, and remember the SPA is a convenience layer - the backend resource server is the real authorization authority, so route guards/hidden buttons are UX only, not security.\n\nOutput a short, prioritized list (Critical / Should-fix / Nice-to-have). If the file looks good, say so briefly. Do not edit files unless the user asks you to."
+      }
+    }
+  ]
+}

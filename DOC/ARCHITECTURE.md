@@ -159,3 +159,11 @@ The design defines universal properties, each checked by a property-based test:
 6. Transient refresh failures are retried at most three times, then re-auth.
 
 See `DOC/SECURITY.md` and the test files referenced in `GUIDE/LEARNING-GUIDE.md`.
+
+## Developer workflow automation
+
+For the Kiro Agent Hooks that assist development of these components (build/test
+on save, per-file code review, docs-freshness reminders, and the security and
+Flyway migration guards), and an explanation of why hooks are only a
+per-developer convenience while CI is the real enforcement, see
+`DOC/AGENT-HOOKS.md`.

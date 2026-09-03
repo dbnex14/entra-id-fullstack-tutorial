@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Backend: security-change guard",
+      "trigger": "PreToolUse",
+      "matcher": "fs_write|str_replace|fs_append",
+      "description": "Targets entra-backend (Spring Boot). Fires BEFORE any write tool. NOTE: PreToolUse matchers are tested against the TOOL NAME (not the file path), so this matches the write tools and the path filtering happens inside the prompt. Flags edits to security-critical files.",
+      "action": {
+        "type": "agent",
+        "prompt": "A write tool (fs_write/str_replace/fs_append) is about to run. Inspect the target file PATH in the tool input. This guard only applies when the path is a backend security-critical file, specifically:\n- entra-backend/src/main/java/com/example/entraoauth/security/SecurityConfig.java\n- any file under entra-backend/src/main/java/com/example/entraoauth/security/ (JwtConfig, AudienceValidator, RolesClaimConverter, AccessAuditFilter)\n- entra-backend/src/main/resources/application.yml\n\nIf the path is NOT one of these, do nothing and let the write proceed silently.\n\nIf it IS one of these, pause and treat this as a security-sensitive change. Before proceeding, clearly state to the user WHAT is changing and WHY it is risky, covering any impact to: authentication (issuer-uri / OIDC discovery), token validation (signature, issuer, expiry/clock-skew, audience via AudienceValidator), the roles-claim to ROLE_* mapping (RolesClaimConverter), CORS allowed origins/methods/headers, method-security (@PreAuthorize/hasRole) rules, and actuator exposure. Confirm the change does not weaken these protections (e.g. widening CORS to '*', disabling audience/issuer checks, permitting endpoints that should be authenticated). Recommend that DOC/SECURITY.md and the security property tests be updated to match. Then let the write proceed. Do not block the write; this is an advisory review."
+      }
+    }
+  ]
+}

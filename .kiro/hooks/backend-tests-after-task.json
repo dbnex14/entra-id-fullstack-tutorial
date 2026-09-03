@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Backend: unit tests after each spec task",
+      "trigger": "PostTaskExec",
+      "description": "Targets entra-backend (Spring Boot). After a Kiro spec task is marked completed, runs the Maven test suite in the entra-backend module so regressions are caught immediately.",
+      "action": {
+        "type": "command",
+        "command": "mvn -q -f entra-backend/pom.xml test"
+      }
+    }
+  ]
+}

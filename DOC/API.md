@@ -410,3 +410,12 @@ user is enough (GET only).
 
 For inspecting the token at jwt.io/jwt.ms and observing the background refresh,
 see `entra-backend/VERIFICATION.md`.
+
+## Keeping this document in sync
+
+A Kiro Agent Hook (`Backend: docs freshness`) reminds contributors to update this
+file whenever a backend controller changes, and another (`Frontend: docs
+freshness`) does the same when an Angular service or component changes the API
+calls it makes. These reminders only run inside Kiro IDE and are a convenience,
+not a guarantee - see `DOC/AGENT-HOOKS.md` for the full list of hooks and the
+IDE-agnostic enforcement (CI) that actually keeps the project honest.

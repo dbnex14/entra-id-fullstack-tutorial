@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Backend: docs freshness",
+      "trigger": "PostFileSave",
+      "matcher": "entra-backend/.*(Controller|Entity|Repository)\\.java$",
+      "description": "Targets entra-backend (Spring Boot). Fires when a Controller, Entity, or Repository Java file is saved (these define API surface and persistence). Reminds the agent to update the relevant DOC/*.md. PostFileSave matchers are tested against the FILE PATH.",
+      "action": {
+        "type": "agent",
+        "prompt": "A backend Controller, Entity, or Repository under entra-backend/ was just saved. These files define the public API surface and the persistence model, so the human-readable docs may now be stale.\n\nCheck whether the change affects any of the following and, if so, propose concrete edits to keep them in sync:\n- DOC/API.md: endpoint paths, HTTP verbs, request/response shapes, required roles, status codes (e.g. 401/403/400).\n- DOC/DATABASE.md: tables, columns, constraints, and the Flyway-owned schema description (remember: entities must match Flyway migrations because Hibernate runs in validate mode).\n- DOC/SECURITY.md: any change to authorization rules (which role can read vs write).\n\nList exactly what changed in the code and which doc sections need updating. Do not rewrite docs wholesale; suggest minimal, accurate edits. Only apply doc edits if the user confirms."
+      }
+    }
+  ]
+}

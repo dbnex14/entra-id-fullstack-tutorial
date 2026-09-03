@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Frontend: docs freshness",
+      "trigger": "PostFileSave",
+      "matcher": "EntraUi/.*\\.(service|component)\\.ts$",
+      "description": "Targets EntraUi (Angular 19). Fires when an Angular service or component TypeScript file is saved (these carry auth wiring and API calls). Reminds the agent to update the relevant DOC/*.md when UI/auth/API behavior changes. PostFileSave matchers are tested against the FILE PATH.",
+      "action": {
+        "type": "agent",
+        "prompt": "An Angular service (*.service.ts) or component (*.component.ts) under EntraUi/ was just saved. Services and components carry the app's auth wiring and API calls, so the human-readable docs may now be stale.\n\nCheck whether the change affects any of the following and, if so, propose concrete edits to keep them in sync:\n- DOC/API.md: which backend endpoints the UI calls, verbs, and expected request/response shapes.\n- DOC/SECURITY.md: MSAL configuration, login/logout flow, scopes/audience requested, the protected-resource map (which origins get a bearer token), and the reminder that the backend is the real authorization boundary.\n- DOC/CONFIGURATION.md: any client IDs, authority/tenant, redirect URIs, or API base URLs that changed.\n- DOC/ARCHITECTURE.md: if a new component/service changes the front-end structure or data flow.\n\nList exactly what changed and which doc sections need updating. Suggest minimal, accurate edits. Only apply doc edits if the user confirms."
+      }
+    }
+  ]
+}

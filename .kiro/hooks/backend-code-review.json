@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Backend: code review on changed Java",
+      "trigger": "PostFileSave",
+      "matcher": "entra-backend/.*\\.java$",
+      "description": "Targets entra-backend (Spring Boot). Fires when a Java file under entra-backend/ is saved. Asks the agent to review the saved file for correctness, bugs, security issues, and project conventions. PostFileSave matchers are tested against the FILE PATH, so this scoping is exact.",
+      "action": {
+        "type": "agent",
+        "prompt": "A Java file under entra-backend/ was just saved. Perform a focused code review of ONLY that file (do not refactor unrelated code). This is a learning/tutorial repo, so favor clear, teaching-oriented feedback.\n\nReview for:\n1. Correctness & bugs: logic errors, null handling, incorrect Optional/stream usage, resource leaks, exception handling, off-by-one and edge cases.\n2. Security: never trust client input; validate with @Valid/Jakarta constraints; enforce authorization via @PreAuthorize/hasRole on write paths; never log tokens, secrets, or full JWTs; derive the caller identity from the token's oid/sub claim (not from request-supplied fields); avoid SQL injection (use JPA/parameter binding).\n3. Spring/JPA conventions used in this project: constructor injection over field injection; DTOs (CreateItemRequest/UpdateItemRequest/ItemDto) at the web boundary rather than exposing entities; Flyway owns the schema (Hibernate ddl-auto=validate) so entities must match the migrated tables; keep controllers thin and push logic into services.\n4. Style: the repo prizes explanatory comments. Flag missing or misleading comments on non-obvious security/auth logic.\n\nOutput a short, prioritized list (Critical / Should-fix / Nice-to-have). If the file looks good, say so briefly. Do not edit files unless the user asks you to."
+      }
+    }
+  ]
+}
