@@ -15,7 +15,8 @@ Entra app registration.
 | API scope | `api://4ebf7ee5-2120-4d4a-8c31-63642bb9fc9c/access_as_user` | frontend `msal.config.ts` |
 | Authority / issuer | `https://login.microsoftonline.com/76325907-a5db-46b1-9d5a-cbcca2e63e66/v2.0` | both |
 | Accepted audiences | `4ebf7ee5-2120-4d4a-8c31-63642bb9fc9c` and `api://4ebf7ee5-2120-4d4a-8c31-63642bb9fc9c` | backend `application.yml` |
-| SPA redirect URI | `http://localhost:4200` | frontend `msal.config.ts`; Entra app registration |
+| SPA redirect URI | `http://localhost:4200` | frontend `msal.config.ts`; Entra app registration (**Single-page application** platform) |
+| Postman native redirect URI | `https://oauth.pstmn.io/v1/callback` | Entra app registration (**Mobile and desktop applications** platform); used only for Postman OAuth login - see `DOC/API.md` Method B |
 | Frontend origin | `http://localhost:4200` | backend CORS (`JwtConfig`) |
 | Backend origin | `http://localhost:8080` (API base `http://localhost:8080/entra-backend`) | frontend interceptor + protected-resource map |
 
@@ -148,6 +149,12 @@ To point the app at a different Entra tenant/app:
 4. Set `"requestedAccessTokenVersion": 2` in the app manifest (see "Access token
    version" above) so the backend accepts the tokens.
 5. Restart the backend (config change) and let the frontend rebuild.
+6. *(Optional, for Postman testing only)* If you want Postman to perform the OAuth
+   login itself (Method B in `DOC/API.md`), also add a **Mobile and desktop
+   applications** platform with redirect URI `https://oauth.pstmn.io/v1/callback`.
+   This is required because a SPA-only registration rejects Postman's server-side
+   token exchange with **AADSTS9002327**; a native redirect URI does not. The SPA
+   platform (`http://localhost:4200`) stays as-is for the Angular app.
 
 Full app-registration steps are in `GUIDE/RUNNING-MAC-GUIDE.md` Section 8.
 

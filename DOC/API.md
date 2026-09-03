@@ -248,16 +248,73 @@ one. (Tip: you can also read it from the app console via
 ### Method B - let Postman perform the OAuth login (no copy/paste)
 
 Postman runs the same Authorization Code + PKCE flow and manages/refreshes the
-token for you. This requires a one-time redirect-URI addition in Entra.
+token for you. This is the "hands-free" method for repeated testing.
+
+**The catch (read this first).** Our Entra app registration exposes its client id
+**only under the Single-page application (SPA) platform**. A SPA-platform client
+carries a special restriction: Entra will only redeem its authorization code for a
+token via a **cross-origin browser request** (one that carries an `Origin` header,
+i.e. issued by JavaScript in a browser). Postman's default "Get New Access Token"
+performs the code->token exchange **server-side** (from the Postman desktop agent,
+with no browser `Origin`), so Entra rejects it with:
+
+> **AADSTS9002327**: Tokens issued for the 'Single-Page Application' client-type may
+> only be redeemed via cross-origin requests.
+
+This is by design and cannot be fixed by changing scopes or the callback URL alone.
+Two configurations resolve it. **Option B1 is recommended and is the verified,
+working setup for this app.**
+
+#### Option B1 (recommended, verified) - add a native redirect URI so Postman's server-side exchange is allowed
+
+A **Mobile and desktop applications** (native/public-client) redirect URI does NOT
+carry the SPA cross-origin restriction, so Postman's normal token exchange succeeds.
+You keep a single app registration; the SPA platform (used by the Angular app) and
+the native platform (used by Postman) coexist on the same client id.
 
 **One-time Entra setup:**
-1. Entra admin center -> **App registrations** -> your app -> **Authentication**.
-2. Under the **Single-page application** platform, click **Add URI** and add
-   `https://oauth.pstmn.io/v1/callback`. **Save**.
+1. Entra admin center -> **App registrations** -> **EntraOAuth** ->
+   **Manage** -> **Authentication**.
+2. In **Platform configurations**, click **+ Add a platform** ->
+   **Mobile and desktop applications**.
+3. That panel shows three Microsoft-suggested redirect URIs with checkboxes
+   (`https://login.microsoftonline.com/common/oauth2/nativeclient`,
+   `https://login.live.com/oauth20_desktop.srf`, and an `msal<client-id>://auth`
+   entry). **Leave all three unchecked** - none of them are for Postman. Instead, in
+   the **Custom redirect URIs** free-text field below them, type exactly:
+   `https://oauth.pstmn.io/v1/callback`
+4. Click **Configure**, then **Save**. (Leave the existing **Single-page
+   application** platform and its `http://localhost:4200` URI exactly as-is - the
+   Angular app still needs it.)
+
+   The end state you want:
+   - **Single-page application:** `http://localhost:4200` (only)
+   - **Mobile and desktop applications:** `https://oauth.pstmn.io/v1/callback`
+
+   > **"Redirect URIs must have distinct values" on Configure.** Entra requires every
+   > redirect URI to be unique **across all platforms**. If you previously tried the
+   > SPA approach you likely already added `https://oauth.pstmn.io/v1/callback` (and/or
+   > `.../v1/browser-callback`) under the **Single-page application** platform, and
+   > Entra now refuses to add the same value again. Fix: under **Single-page
+   > application**, **delete** the `https://oauth.pstmn.io/v1/callback` row and
+   > **Save**, then add it under **Mobile and desktop applications** as in steps 3-4.
+   > (A stray `.../v1/browser-callback` under SPA can be deleted too unless you plan to
+   > use Option B2.)
+
+   > **If "+ Add a platform" is missing:** make sure you opened the **App
+   > registration** (breadcrumb: *App registrations*), not the **Enterprise
+   > application** - the latter has no platform configuration. As a fallback you can
+   > add the URI via **Manage -> Manifest** by putting
+   > `"https://oauth.pstmn.io/v1/callback"` into the `publicClient.redirectUris`
+   > array (that array *is* the "Mobile and desktop applications" platform) and
+   > leaving the `spa` block untouched.
 
 **In Postman**, on the request (or the collection) -> **Authorization** tab:
 1. **Auth Type**: `OAuth 2.0`.
-2. Under **Configure New Token**, set:
+2. Leave **"Authorize using browser" UNCHECKED** (this is the key difference from
+   Option B2 - we want Postman's own server-side exchange, which the native platform
+   now permits).
+3. Under **Configure New Token**, set:
    - **Token Name**: any label (e.g. `Entra Admin`).
    - **Grant Type**: `Authorization Code (With PKCE)`.
    - **Callback URL**: `https://oauth.pstmn.io/v1/callback`.
@@ -270,11 +327,73 @@ token for you. This requires a one-time redirect-URI addition in Entra.
    - **Scope**:
      `api://4ebf7ee5-2120-4d4a-8c31-63642bb9fc9c/access_as_user openid profile offline_access`
    - **Client Authentication**: `Send client credentials in body`.
-3. Click **Get New Access Token**, sign in as your Admin user in the popup, then
+4. Click **Get New Access Token**, sign in as a **tenant** user holding the **Admin**
+   role in the popup (see "Which account to sign in with" below), then
    **Proceed** / **Use Token**.
-4. Postman now attaches the token as the Bearer credential on the request. When it
-   expires, click **Get New Access Token** again (the refresh token, from
-   `offline_access`, lets Postman renew without a full re-login).
+5. Postman attaches the token as the Bearer credential on the request. When it
+   expires, click **Get New Access Token** again; the refresh token (from
+   `offline_access`) lets Postman renew without a full re-login.
+
+**Verify it worked:** send `GET http://localhost:8080/entra-backend/items` (expect
+**200**), then `POST http://localhost:8080/entra-backend/items` with body
+`{"name":"From Postman"}` (expect **201** for an Admin token; **403** means the token
+lacks the Admin role).
+
+#### Option B2 (SPA-only alternative) - force Postman through the browser
+
+If you cannot add a native platform (e.g. org policy) and must keep the app SPA-only,
+Postman's **"Authorize using browser"** option runs the entire flow - including the
+token exchange - in your real browser. That makes the redemption genuinely
+cross-origin, satisfying the SPA rule.
+
+**One-time Entra setup:** under the **Single-page application** platform, **Add URI**
+`https://oauth.pstmn.io/v1/browser-callback` and **Save**. (Note this is the
+`browser-callback` URI, which differs from Option B1's `/v1/callback`.)
+
+**In Postman:** same fields as Option B1, except:
+- **Check** the **"Authorize using browser"** box.
+- **Callback URL** becomes `https://oauth.pstmn.io/v1/browser-callback` (Postman
+  fills this automatically when the box is checked).
+
+Tradeoff: no platform change, but it depends on Postman's browser interception and is
+less reliable than B1. If it misbehaves, use B1.
+
+#### Option B3 - a separate app registration for API testing
+
+Only if org policy forbids adding a native platform to the SPA app. Create a second
+app registration configured as **Mobile and desktop applications** with redirect URI
+`https://oauth.pstmn.io/v1/callback`, grant it the `access_as_user` scope of this API
+(**API permissions** -> add a permission -> **My APIs** -> EntraOAuth), and use its
+client id in Postman. Tradeoff: a second client id and separate consent to manage; the
+role claim still comes from the signed-in user, so no extra role assignment is needed.
+More moving parts - prefer B1.
+
+### Which account to sign in with (avoiding the wrong-account error)
+
+Sign in with an identity that is a **member or guest of this tenant** AND is assigned
+the **Admin** app role (for POST/PUT/DELETE) - for read-only testing, a **Viewer**
+user is enough (GET only).
+
+- Your personal outlook.com account works **only because it was added to the tenant
+  as a guest/member** and given the Admin role. `viewer@<tenant>.onmicrosoft.com`
+  covers the Viewer path.
+- Do **not** sign in with an arbitrary Microsoft/Google account that is not in the
+  tenant. Signing in with `...@gmail.com` (identity provider `live.com`/Google)
+  produced **AADSTS50020** ("user account ... does not exist in tenant ... and cannot
+  access the application"). If you see that, you picked the wrong account in the
+  popup: use the popup's **"Use another account"** / **Sign in with a different
+  account** link and choose the tenant user. Signing out of other Microsoft sessions
+  first, or using a fresh/incognito browser profile, avoids the popup silently reusing
+  a wrong cached account.
+
+### Troubleshooting Postman / Entra errors
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| **AADSTS90102** - `'redirect_uri' value must be a valid absolute URI` | The **Callback URL** field in Postman was blank or not a valid absolute URI, so no (or a malformed) `redirect_uri` was sent. | Set **Callback URL** to `https://oauth.pstmn.io/v1/callback` (Option B1) or, with "Authorize using browser" checked, `https://oauth.pstmn.io/v1/browser-callback` (Option B2). The exact value must also be registered on the app (see each option). |
+| **AADSTS50020** - `User account '...@gmail.com' from identity provider 'live.com' does not exist in tenant ... and cannot access the application` | You signed in with an account that is **not a member/guest of this tenant** (e.g. a personal Google/Microsoft account that was never invited). | In the sign-in popup choose **Use another account** and sign in as a tenant user/guest that holds the required app role. Invite the account as a guest and assign a role first if needed. |
+| **AADSTS9002327** - `Tokens issued for the 'Single-Page Application' client-type may only be redeemed via cross-origin requests` | The app is registered **SPA-only**, and Postman tried a **server-side** code->token exchange (no browser `Origin`), which Entra forbids for SPA clients. | Use **Option B1** (add a **Mobile and desktop applications** redirect URI `https://oauth.pstmn.io/v1/callback` and leave "Authorize using browser" **unchecked**), or **Option B2** (keep SPA-only, **check** "Authorize using browser", register `.../v1/browser-callback`). |
+| **"Redirect URIs must have distinct values"** when clicking **Configure**/**Save** in Entra | You're trying to add `https://oauth.pstmn.io/v1/callback` to one platform while the **same URI already exists on another platform** (typically left under **Single-page application** from an earlier Method B attempt). Entra requires redirect URIs to be unique across all platforms. | Delete the duplicate `https://oauth.pstmn.io/v1/callback` from the **Single-page application** platform and **Save**, then add it under **Mobile and desktop applications**. Also remove any stray `.../v1/browser-callback` unless using Option B2. |
 
 ### If you still get 401 after adding a token
 
@@ -286,6 +405,8 @@ token for you. This requires a one-time redirect-URI addition in Entra.
   `DOC/CONFIGURATION.md`) and sign in again.
 - **Copied "Bearer" too**: the Token field should contain only the JWT, not the
   word `Bearer`.
+- **403 (not 401) on POST/PUT/DELETE**: the token is valid but lacks the `Admin`
+  role. Sign in as an Admin user (a Viewer token can only GET).
 
 For inspecting the token at jwt.io/jwt.ms and observing the background refresh,
 see `entra-backend/VERIFICATION.md`.
