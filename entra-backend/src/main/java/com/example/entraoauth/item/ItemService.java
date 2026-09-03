@@ -154,6 +154,34 @@ public class ItemService {
     }
 
     /**
+     * Deletes an existing {@code item} identified by {@code id}.
+     *
+     * <p>This backs the write endpoint ({@code DELETE /entra-backend/items/{id}}), which the
+     * controller permits for {@code ROLE_Admin} only (R8.2, R8.3); a non-Admin authenticated caller
+     * is stopped by method security with 403 before this runs, so no row is removed. If no row
+     * exists for {@code id}, a {@link ResponseStatusException} with {@link HttpStatus#NOT_FOUND 404}
+     * is thrown so the client receives a clean 404 rather than a silent no-op &mdash; making a delete
+     * of a non-existent id observably distinct from a successful delete.
+     *
+     * <p>Deletion is a hard delete: the row is removed from the {@code item} table. The
+     * {@code access_audit} record of the request (subject, authorities, method, path, status) is
+     * written independently by the audit filter and is unaffected, so the fact that an Admin issued
+     * the delete remains traceable.
+     *
+     * @param id the identifier of the item to delete
+     * @throws ResponseStatusException with status 404 if no item exists for {@code id}
+     */
+    public void delete(long id) {
+        // Confirm the row exists first so a missing id yields a clean 404 rather than JPA's silent
+        // no-op behavior on deleteById for an absent row.
+        if (!repository.existsById(id)) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Item not found: " + id);
+        }
+        repository.deleteById(id);
+    }
+
+    /**
      * Extracts the token subject ({@code sub}/{@code oid}) of the currently authenticated caller
      * from the security context.
      *

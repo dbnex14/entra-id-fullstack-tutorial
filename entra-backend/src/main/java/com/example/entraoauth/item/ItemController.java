@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -142,5 +143,29 @@ class ItemController {
     @PreAuthorize("hasRole('Admin')")
     ItemDto update(@PathVariable long id, @Valid @RequestBody UpdateItemRequest request) {
         return service.update(id, request);
+    }
+
+    /**
+     * Write endpoint: deletes an existing item identified by {@code id}.
+     *
+     * <p>{@code @PreAuthorize("hasRole('Admin')")} limits deletion to {@code ROLE_Admin} (R8.2,
+     * R8.3); a non-Admin authenticated caller receives 403 with no row removed, because method
+     * security stops the request before this body runs. The {@code {id}} path segment is bound to
+     * the {@code long id} parameter via {@code @PathVariable}.
+     *
+     * <p>On success the service removes the row and this handler returns HTTP <strong>204 No
+     * Content</strong> &mdash; the conventional response for a successful delete that carries no
+     * body. If no item exists for {@code id}, the service throws a 404, which Spring maps to an HTTP
+     * 404 response. The allowed {@code DELETE} method is already advertised by the CORS policy
+     * (see {@code JwtConfig.corsConfigurationSource}), so the browser preflight succeeds.
+     *
+     * @param id the identifier of the item to delete (from the path)
+     * @return HTTP 204 No Content on success
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('Admin')")
+    ResponseEntity<Void> delete(@PathVariable long id) {
+        service.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

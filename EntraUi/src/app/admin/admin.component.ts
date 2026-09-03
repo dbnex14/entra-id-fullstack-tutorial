@@ -177,7 +177,17 @@ interface UpdateItemRequest {
           @for (item of items(); track item.id) {
             <li class="admin__item-row">
               <span>#{{ item.id }} — {{ item.name }}</span>
-              <button type="button" (click)="beginEdit(item)">Edit</button>
+              <span class="admin__item-actions">
+                <button type="button" (click)="beginEdit(item)">Edit</button>
+                <button
+                  type="button"
+                  class="btn--danger"
+                  [disabled]="deletingId() === item.id"
+                  (click)="deleteItem(item)"
+                >
+                  @if (deletingId() === item.id) { Deleting… } @else { Delete }
+                </button>
+              </span>
             </li>
           }
         </ul>
@@ -299,6 +309,12 @@ export class AdminComponent implements OnInit {
 
   /** Human-readable error message for the update flow, including 403. */
   readonly editErrorMessage = signal<string>('');
+
+  /**
+   * The id of the item currently being deleted, or null when no delete is in
+   * flight. Used to disable and relabel the specific row's Delete button.
+   */
+  readonly deletingId = signal<number | null>(null);
 
   // ── Convenience read-throughs to the session store (for the template) ─────
 
@@ -457,6 +473,59 @@ export class AdminComponent implements OnInit {
         error: (err: HttpErrorResponse) => {
           this.editErrorMessage.set(this.toWriteErrorMessage(err));
           this.saving.set(false);
+        },
+      });
+  }
+
+  /**
+   * Delete an item after an explicit confirmation prompt.
+   *
+   * DELETE /entra-backend/items/{id} is Admin-only and returns 204 No Content on
+   * success. As with create/update the server is authoritative: a non-Admin
+   * token would get 403 and remove nothing. We confirm first because a delete is
+   * destructive and not undoable from the UI.
+   *
+   *   - 204 -> remove the row locally by refreshing the list; clear any error.
+   *   - 403 -> "not authorized (Admin required)".
+   *   - 404 -> the item was already gone; refresh so the list reflects reality.
+   *   - other -> generic failure message.
+   */
+  deleteItem(item: ItemDto): void {
+    // Guard the destructive action behind a native confirm dialog. If the user
+    // cancels, do nothing.
+    const confirmed = window.confirm(
+      `Delete item #${item.id} "${item.name}"? This cannot be undone.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    // If we were editing this same item, close the edit form — it is about to
+    // cease to exist.
+    if (this.editingId() === item.id) {
+      this.cancelEdit();
+    }
+
+    this.deletingId.set(item.id);
+    this.editErrorMessage.set('');
+
+    this.http
+      .delete<void>(`${API_BASE_URL}/entra-backend/items/${item.id}`)
+      .subscribe({
+        next: () => {
+          // 204 No Content: the row is gone. Reload the list so the UI matches
+          // the server, and clear the deleting indicator.
+          this.deletingId.set(null);
+          this.loadItems();
+        },
+        error: (err: HttpErrorResponse) => {
+          this.deletingId.set(null);
+          if (err.status === 404) {
+            // Already deleted elsewhere — reconcile by refreshing the list.
+            this.loadItems();
+            return;
+          }
+          this.editErrorMessage.set(this.toWriteErrorMessage(err));
         },
       });
   }
