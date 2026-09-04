@@ -1,6 +1,7 @@
 package com.example.entraoauth.item;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -148,11 +149,19 @@ class ItemControllerSecurityTest {
 
         // Stub the read path: an authorized GET returns this list and yields 200.
         when(itemService.findAll())
-                .thenReturn(List.of(new ItemDto(1L, "existing", "seeded item", "subject-oid")));
+                .thenReturn(List.of(new ItemDto(1L, "existing", "seeded item", "hardware", "subject-oid")));
 
         // Stub the write path: an Admin POST returns this DTO, which the controller wraps in 201.
         when(itemService.create(any(CreateItemRequest.class)))
-                .thenReturn(new ItemDto(2L, "created", "created via POST", "admin-oid"));
+                .thenReturn(new ItemDto(2L, "created", "created via POST", "software", "admin-oid"));
+
+        // Stub the per-item history read path: an authorized GET returns this list and yields 200.
+        // (The 403/401 paths never reach this stub, which is exactly what we assert.)
+        when(itemService.findHistoryForItem(anyLong()))
+                .thenReturn(List.of(new ItemHistoryDto(
+                        7L, 1L, ItemHistory.ChangeType.CREATE,
+                        "subject-oid", "Ada Admin", "Created item 'existing'",
+                        java.time.OffsetDateTime.parse("2026-01-15T10:22:31.512Z"))));
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -243,6 +252,44 @@ class ItemControllerSecurityTest {
         mockMvc.perform(post("/items")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"x\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Per-item change history (GET /items/{id}/history): reads are open to Viewer AND Admin (like
+    // the item list), and unauthenticated callers get 401. History is observational: both roles may
+    // read it, and it is not a write endpoint, so there is no Admin-only variant to assert here.
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * A caller holding {@code ROLE_Viewer} may read an item's history: the endpoint is guarded by
+     * {@code @PreAuthorize("hasAnyRole('Viewer','Admin')")}, so it returns 200 for a Viewer.
+     */
+    @Test
+    void viewerCanReadItemHistory() throws Exception {
+        mockMvc.perform(get("/items/1/history")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_Viewer"))))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * A caller holding {@code ROLE_Admin} may likewise read an item's history (200).
+     */
+    @Test
+    void adminCanReadItemHistory() throws Exception {
+        mockMvc.perform(get("/items/1/history")
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_Admin"))))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * An unauthenticated caller is rejected with 401 on the history read endpoint, just like the
+     * item list: {@code anyRequest().authenticated()} is not satisfied, so the resource-server entry
+     * point challenges before dispatch (R8.4, R8.5).
+     */
+    @Test
+    void anonymousReadItemHistoryIsUnauthorized() throws Exception {
+        mockMvc.perform(get("/items/1/history"))
                 .andExpect(status().isUnauthorized());
     }
 

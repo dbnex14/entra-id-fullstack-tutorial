@@ -17,7 +17,9 @@ startup fails fast rather than silently mutating the schema. This makes the sche
 reproducible ("schema is code") and prevents drift.
 
 Migration file naming follows `V<version>__<description>.sql`. The initial
-migration is `V1__initial_schema.sql`.
+migration is `V1__initial_schema.sql`; `V2__item_category_and_history.sql` adds
+the `category` column and the `item_history` table (a forward-only change - V1 is
+never edited).
 
 ## Tables
 
@@ -31,12 +33,47 @@ may read; Admin may write.
 | `id` | BIGSERIAL | PRIMARY KEY | DB-generated identity |
 | `name` | VARCHAR(200) | NOT NULL | Item name |
 | `description` | TEXT | nullable | Optional description |
+| `category` | VARCHAR(100) | nullable | Optional short label (hardware/software/service); added in `V2` |
 | `created_by` | VARCHAR(100) | NOT NULL | **Token subject (oid/sub)** of the creator; provenance only, not authorization |
 | `created_at` | TIMESTAMPTZ | NOT NULL DEFAULT now() | Creation time |
 | `updated_at` | TIMESTAMPTZ | NOT NULL DEFAULT now() | Last-modified time |
 
 Index: `idx_item_created_by` on `item(created_by)` - speeds "items created by
 this subject" lookups.
+
+### item_history
+
+The change log for items, added by `V2__item_category_and_history.sql`. One row is
+written on every create/update/delete of an item. **Audit/change-log only - it
+records who changed what and when; it is never read to make an authorization
+decision** (R2). Viewer and Admin may read it; only Admin can generate it (only
+Admin can write items).
+
+| Column | Type | Constraints | Notes |
+| --- | --- | --- | --- |
+| `id` | BIGSERIAL | PRIMARY KEY | DB-generated identity |
+| `item_id` | BIGINT | FK -> `item(id)`, nullable, `ON DELETE SET NULL` | The changed item; becomes `null` after that item is deleted so the record survives |
+| `change_type` | VARCHAR(20) | NOT NULL, CHECK in (CREATE, UPDATE, DELETE) | Kind of change |
+| `actor_subject` | VARCHAR(100) | NOT NULL | **Token subject (oid/sub)** of the actor; identity/provenance, not authorization |
+| `actor_name` | VARCHAR(200) | nullable | Actor's display name (`name` claim) if present |
+| `details` | TEXT | NOT NULL | Human-readable summary of the change |
+| `changed_at` | TIMESTAMPTZ | NOT NULL DEFAULT now() | When the change happened |
+
+Index: `idx_item_history_item_id` on `item_history(item_id)` - speeds the
+"history for this item" lookup (`GET /entra-backend/items/{id}/history`).
+PostgreSQL does not auto-index foreign-key columns, so this index is added
+explicitly.
+
+**Why `ON DELETE SET NULL` (not `CASCADE`).** A CASCADE would delete an item's
+history when the item is deleted - erasing the very "this item was deleted" record
+we want to keep. SET NULL lets the item row be hard-deleted while its history rows
+(including the DELETE entry, written just before removal) remain, with `item_id`
+set to `null`.
+
+Rows are written by `ItemService` from within the create/update/delete paths,
+after the `@PreAuthorize("hasRole('Admin')")` gate - so every entry is provably
+attributable to an authorized Admin. The actor is taken from the validated JWT
+(subject + `name` claim), never from client input.
 
 ### app_user
 
@@ -104,8 +141,9 @@ psql "postgresql://postgres:postgres@localhost:5432/my_workspace" \
 
 ## Adding a new migration
 
-1. Create `entra-backend/src/main/resources/db/migration/V2__your_change.sql`
-   (next ascending version, double underscore before the description).
+1. Create `entra-backend/src/main/resources/db/migration/V3__your_change.sql`
+   (next ascending version after the existing `V2`, double underscore before the
+   description).
 2. Write the DDL/DML. PostgreSQL runs DDL transactionally, so a failing migration
    rolls back and halts startup rather than leaving a half-applied schema.
 3. If the change affects a JPA entity, update the entity to match (remember:

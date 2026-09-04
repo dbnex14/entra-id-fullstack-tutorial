@@ -53,19 +53,48 @@ const API_BASE_URL = 'http://localhost:8080';
 /**
  * Client-side view of the backend `ItemDto` record. The Java side is:
  *
- *     record ItemDto(Long id, String name, String description, String createdBy) {}
+ *     record ItemDto(Long id, String name, String description, String category, String createdBy) {}
  *
- * so the JSON shape is `{ id, name, description, createdBy }`. `description` is
- * marked optional here because the column is nullable in the schema (the backend
- * may serialize it as `null`/absent). `createdBy` holds the token subject
- * (oid/sub) that the backend persisted from the validated JWT — this is how a
- * rendered row ties back to the identity that created it.
+ * so the JSON shape is `{ id, name, description, category, createdBy }`. `description`
+ * and `category` are marked optional here because both columns are nullable in the
+ * schema (the backend may serialize them as `null`/absent). `createdBy` holds the
+ * token subject (oid/sub) that the backend persisted from the validated JWT — this
+ * is how a rendered row ties back to the identity that created it.
  */
 export interface ItemDto {
   id: number;
   name: string;
   description?: string;
+  category?: string;
   createdBy: string;
+}
+
+/**
+ * Client-side view of the backend `ItemHistoryDto` record. The Java side is:
+ *
+ *     record ItemHistoryDto(Long id, Long itemId, ChangeType changeType,
+ *                           String actorSubject, String actorName,
+ *                           String details, OffsetDateTime changedAt) {}
+ *
+ * so the JSON shape is `{ id, itemId, changeType, actorSubject, actorName, details, changedAt }`.
+ *
+ * This is a READ-ONLY audit projection. Note the identity fields:
+ *   - `actorSubject` is the token subject (oid/sub) of whoever made the change,
+ *   - `actorName` is that caller's display name (`name` claim), which may be absent.
+ * Both are captured by the backend from the *validated* JWT — never from client
+ * input — so a history row is provably attributable to a real, authorized identity.
+ * `itemId` may be `null` for a change whose item was later deleted (the backend FK
+ * is `ON DELETE SET NULL`, so a DELETE record survives the item's removal).
+ * `changedAt` is an ISO-8601 timestamp string with offset (Java `OffsetDateTime`).
+ */
+export interface ItemHistoryDto {
+  id: number;
+  itemId: number | null;
+  changeType: 'CREATE' | 'UPDATE' | 'DELETE';
+  actorSubject: string;
+  actorName?: string;
+  details: string;
+  changedAt: string;
 }
 
 @Component({
@@ -131,6 +160,10 @@ export interface ItemDto {
                 @if (item.description) {
                   <span class="dashboard__item-desc">{{ item.description }}</span>
                 }
+                <!-- category is an optional short label; only render it when present. -->
+                @if (item.category) {
+                  <span class="dashboard__item-category">category: {{ item.category }}</span>
+                }
                 <!-- createdBy is the token subject the backend persisted, tying
                      the row back to the identity that created it. -->
                 <span class="dashboard__item-owner">created by {{ item.createdBy }}</span>
@@ -140,6 +173,55 @@ export interface ItemDto {
         } @else {
           <p class="dashboard__status dashboard__status--empty" role="status">
             No items yet.
+          </p>
+        }
+      }
+      </div>
+
+      <!--
+        ── CHANGE HISTORY (read-only, Viewer OR Admin) ───────────────────────
+        This section reads the GLOBAL change log from GET /entra-backend/history.
+        The backend gates it with @PreAuthorize("hasAnyRole('Viewer','Admin')"),
+        exactly like the item list: history is observational, so BOTH roles may
+        READ it, while only Admin can GENERATE entries (only Admin can write
+        items). It is strictly read-only in the UI — there is no control here to
+        create or mutate history; the log is produced server-side as a side effect
+        of item writes. Each row shows what changed, WHO did it (actorName or the
+        token subject), and WHEN.
+      -->
+      <div class="card">
+      <header class="dashboard__header">
+        <h2>Change history</h2>
+        <button type="button" (click)="loadHistory()" [disabled]="historyLoading()">
+          @if (historyLoading()) { Loading… } @else { Refresh history }
+        </button>
+      </header>
+
+      @if (historyError()) {
+        <div class="dashboard__status dashboard__status--error" role="alert">
+          {{ historyError() }}
+        </div>
+      }
+
+      @if (!historyLoading() && !historyError()) {
+        @if (history().length > 0) {
+          <ul class="dashboard__history">
+            @for (entry of history(); track entry.id) {
+              <li class="dashboard__history-entry">
+                <span class="dashboard__history-type">{{ entry.changeType }}</span>
+                <span class="dashboard__history-details">{{ entry.details }}</span>
+                <!-- Prefer the human-readable display name; fall back to the stable
+                     token subject when the token carried no name claim. -->
+                <span class="dashboard__history-actor">
+                  by {{ entry.actorName || entry.actorSubject }}
+                </span>
+                <span class="dashboard__history-when">{{ entry.changedAt }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="dashboard__status dashboard__status--empty" role="status">
+            No changes recorded yet.
           </p>
         }
       }
@@ -175,6 +257,17 @@ export class DashboardComponent implements OnInit {
   /** Human-readable error message when a request fails; empty otherwise. */
   readonly error = signal<string>('');
 
+  // ── Change-history state (signals) ─────────────────────────────────────────
+
+  /** The loaded global change-log entries (newest first). Populated by loadHistory(). */
+  readonly history = signal<ItemHistoryDto[]>([]);
+
+  /** True while the GET /entra-backend/history request is in flight. */
+  readonly historyLoading = signal<boolean>(false);
+
+  /** Human-readable error message when the history request fails; empty otherwise. */
+  readonly historyError = signal<string>('');
+
   // ── Convenience read-throughs to the session store (for the template) ─────
 
   /** Whether a session is currently authenticated (drives the identity banner). */
@@ -187,6 +280,7 @@ export class DashboardComponent implements OnInit {
    */
   ngOnInit(): void {
     this.loadItems();
+    this.loadHistory();
   }
 
   /**
@@ -230,6 +324,32 @@ export class DashboardComponent implements OnInit {
    */
   roles(): string[] {
     return this.store.state().roles;
+  }
+
+  /**
+   * Read the global change log from the backend and project it into signals.
+   *
+   * GET /entra-backend/history is permitted for Viewer OR Admin (server-enforced),
+   * the same read audience as the item list — so a Viewer can watch what Admins
+   * have changed without being able to change anything themselves. The bearer
+   * token is attached transparently by authTokenInterceptor; this method just
+   * issues the GET and reacts. Exposed publicly so the "Refresh history" button
+   * can re-invoke it.
+   */
+  loadHistory(): void {
+    this.historyLoading.set(true);
+    this.historyError.set('');
+
+    this.http.get<ItemHistoryDto[]>(`${API_BASE_URL}/entra-backend/history`).subscribe({
+      next: (loaded) => {
+        this.history.set(loaded);
+        this.historyLoading.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.historyError.set(this.toReadErrorMessage(err));
+        this.historyLoading.set(false);
+      },
+    });
   }
 
   /**

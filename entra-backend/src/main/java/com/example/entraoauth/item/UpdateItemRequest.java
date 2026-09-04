@@ -18,8 +18,13 @@ import jakarta.validation.constraints.NotBlank;
  * overwritten from client input; the service layer manages identity and the {@code updated_at}
  * timestamp when applying the change.
  *
+ * <p><strong>Optional category.</strong> Like {@link CreateItemRequest}, the {@code category} field
+ * is an optional short label with no {@link NotBlank} constraint (the column is nullable). Sending
+ * {@code null} clears the category; sending a value sets it.
+ *
  * @param name        the required, non-blank item name
  * @param description optional free-text description (may be null)
+ * @param category    optional short category label (may be null)
  */
-public record UpdateItemRequest(@NotBlank String name, String description) {
+public record UpdateItemRequest(@NotBlank String name, String description, String category) {
 }

@@ -85,6 +85,21 @@ public class Item {
     private String description;
 
     /**
+     * Optional short category label (e.g. {@code "hardware"}, {@code "software"},
+     * {@code "service"}). Maps to {@code category VARCHAR(100)} added by
+     * {@code V2__item_category_and_history.sql}.
+     *
+     * <p><strong>Why nullable.</strong> The column was added to an already-populated table as a
+     * <em>nullable</em> column (no default/backfill), so rows created before the V2 migration have a
+     * {@code null} category, and the feature makes category optional for every item. There is
+     * therefore intentionally no {@code nullable = false} here &mdash; and because the entity mapping
+     * must match the schema for the startup {@code ddl-auto=validate} check, marking it non-null
+     * would actually fail validation against the nullable column.
+     */
+    @Column(name = "category")
+    private String category;
+
+    /**
      * Provenance / identity field. Maps to {@code created_by VARCHAR(100) NOT NULL}.
      *
      * <p>This holds the <strong>token subject</strong> &mdash; the {@code oid}/{@code sub} claim from
@@ -122,14 +137,16 @@ public class Item {
      *
      * @param name        the item name (non-null per the schema)
      * @param description optional description (may be null)
+     * @param category    optional short category label (may be null)
      * @param createdBy   the token subject (oid/sub) of the authenticated caller
      * @param createdAt   creation timestamp
      * @param updatedAt   last-modified timestamp (equal to {@code createdAt} on creation)
      */
-    public Item(String name, String description, String createdBy,
+    public Item(String name, String description, String category, String createdBy,
                 OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         this.name = name;
         this.description = description;
+        this.category = category;
         this.createdBy = createdBy;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -157,6 +174,14 @@ public class Item {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 
     public String getCreatedBy() {

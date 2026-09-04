@@ -18,8 +18,14 @@ import jakarta.validation.constraints.NotBlank;
  * principal. Letting the client set it would let a caller forge provenance, so it is deliberately
  * absent from the request contract. Timestamps are likewise managed server-side.
  *
+ * <p><strong>Optional category.</strong> The {@code category} field is a short, optional label
+ * (e.g. {@code "hardware"}). It has no {@link NotBlank} constraint because the schema column
+ * {@code item.category} is nullable and the feature makes category optional; the client may omit it
+ * or send {@code null}.
+ *
  * @param name        the required, non-blank item name
  * @param description optional free-text description (may be null)
+ * @param category    optional short category label (may be null)
  */
-public record CreateItemRequest(@NotBlank String name, String description) {
+public record CreateItemRequest(@NotBlank String name, String description, String category) {
 }

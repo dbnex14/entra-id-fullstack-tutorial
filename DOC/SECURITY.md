@@ -54,7 +54,14 @@ Method security is enabled (`@EnableMethodSecurity`), and endpoints are gated wi
 `@PreAuthorize`:
 
 - `GET /entra-backend/items` - `hasAnyRole('Viewer','Admin')`.
+- `GET /entra-backend/items/{id}/history` - `hasAnyRole('Viewer','Admin')`.
+- `GET /entra-backend/history` - `hasAnyRole('Viewer','Admin')`.
 - `POST` / `PUT` / `DELETE /entra-backend/items` - `hasRole('Admin')`.
+
+Reads (items and change history) are open to Viewer and Admin; only Admin can
+write items, and therefore only Admin can generate change-history entries. The
+change history is observational data - both roles may read it, but it is never
+consulted to make an authorization decision (authorization is claim-driven, R2).
 
 Because `@PreAuthorize` runs before the controller body, a caller lacking the
 required role gets **403** and the method never executes - so a forbidden write or

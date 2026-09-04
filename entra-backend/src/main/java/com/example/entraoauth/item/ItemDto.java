@@ -10,16 +10,18 @@ package com.example.entraoauth.item;
  * intentional public shape of an item on the API boundary.
  *
  * <p><strong>What is (and is not) exposed.</strong> The DTO surfaces {@code id}, {@code name},
- * {@code description}, and {@code createdBy}. The {@code createdBy} field is the token subject
- * ({@code oid}/{@code sub} claim) that was recorded when the row was written, so a client reading an
- * item can see which identity created it &mdash; this is the point where persisted data is tied back
- * to identity. The internal {@code createdAt}/{@code updatedAt} timestamps are intentionally omitted
- * from this instructional projection; add them here if the UI needs to display them.
+ * {@code description}, {@code category}, and {@code createdBy}. The {@code createdBy} field is the
+ * token subject ({@code oid}/{@code sub} claim) that was recorded when the row was written, so a
+ * client reading an item can see which identity created it &mdash; this is the point where persisted
+ * data is tied back to identity. The internal {@code createdAt}/{@code updatedAt} timestamps are
+ * intentionally omitted from this instructional projection; add them here if the UI needs to display
+ * them.
  *
  * @param id          database-assigned identifier of the item
  * @param name        the item name
  * @param description optional description (may be null)
+ * @param category    optional short category label such as "hardware"/"software" (may be null)
  * @param createdBy   the token subject (oid/sub) of the identity that created the item
  */
-public record ItemDto(Long id, String name, String description, String createdBy) {
+public record ItemDto(Long id, String name, String description, String category, String createdBy) {
 }

@@ -38,10 +38,18 @@ A layered Spring Boot resource server:
     security, and wires the audit filter.
   - `AccessAuditFilter` records each request's outcome (audit only).
 - **Domain layer** (`item/`)
-  - `Item` (JPA entity), `ItemDto`, `CreateItemRequest`, `UpdateItemRequest`.
-  - `ItemRepository` (Spring Data JPA), `ItemService` (business logic + stamps the
-    token subject onto rows), `ItemController` (role-protected REST endpoints:
-    GET read for Viewer/Admin; POST/PUT/DELETE for Admin, DELETE returning 204).
+  - `Item` (JPA entity), `ItemDto`, `CreateItemRequest`, `UpdateItemRequest` -
+    all carry an optional `category` label.
+  - `ItemHistory` (JPA entity with a lazy, nullable `@ManyToOne` to `Item`),
+    `ItemHistoryDto`, and `ItemHistory.ChangeType` (CREATE/UPDATE/DELETE) - the
+    item change log.
+  - `ItemRepository` and `ItemHistoryRepository` (Spring Data JPA), `ItemService`
+    (business logic + stamps the token subject onto rows, and records a history
+    entry on each create/update/delete capturing the acting identity),
+    `ItemController` (role-protected REST endpoints: GET read for Viewer/Admin;
+    POST/PUT/DELETE for Admin, DELETE returning 204; plus GET
+    `/items/{id}/history` for Viewer/Admin), and `HistoryController` (GET
+    `/history` global change log for Viewer/Admin).
 - **Audit layer** (`audit/`)
   - `AccessAudit` entity + `AccessAuditRepository`.
 - **Persistence**
@@ -51,8 +59,9 @@ A layered Spring Boot resource server:
 ### Backend startup sequence
 
 1. Spring Boot boots; HikariCP opens the datasource (10s connection budget).
-2. Flyway applies pending migrations (creates `item`, `app_user`,
-   `access_audit`, `flyway_schema_history` on a fresh DB).
+2. Flyway applies pending migrations (V1 creates `item`, `app_user`,
+   `access_audit`, `flyway_schema_history` on a fresh DB; V2 adds `item.category`
+   and the `item_history` table).
 3. Hibernate validates entity mappings against the migrated schema.
 4. The OAuth2 resource server performs OIDC discovery to load Entra's JWKS keys.
 5. Tomcat starts on port 8080.
@@ -79,8 +88,11 @@ An Angular 19 standalone SPA (no NgModules; `inject()` DI and signals throughout
   - `home` is the public (unguarded) landing page - the default route and the
     post-logout destination, so opening the app root never forces a login.
   - `login` handles the redirect callback and session establishment.
-  - `dashboard` reads `/entra-backend/items`; `admin` performs the Admin-only
-    writes: create (POST), edit (PUT), and delete (DELETE) with a confirm prompt.
+  - `dashboard` reads `/entra-backend/items` (showing each item's optional
+    category) and the read-only change log from `/entra-backend/history` (visible
+    to Viewer and Admin); `admin` performs the Admin-only writes: create (POST),
+    edit (PUT) - both including the optional category - and delete (DELETE) with a
+    confirm prompt.
 - **App shell** (`app/app.component.*`)
   - "Item Manager" header with role-based nav (Admin link only for Admins),
     plus a Sign in / Sign out control and the current roles.

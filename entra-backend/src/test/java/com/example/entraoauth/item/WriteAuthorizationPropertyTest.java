@@ -352,10 +352,11 @@ class WriteAuthorizationPropertyTest {
      *       standing in for {@code repository.count()} from the design's Property 4.</li>
      * </ul>
      *
-     * <p>Because {@link ItemService} has no no-arg constructor (it requires an {@link ItemRepository}),
-     * this subclass passes {@code null} to {@code super(null)}: the superclass merely stores the
-     * reference and never uses it, since every method that would touch the repository is overridden
-     * here. This keeps the slice completely free of JPA/PostgreSQL wiring.
+     * <p>Because {@link ItemService} has no no-arg constructor (it requires an {@link ItemRepository}
+     * and an {@link ItemHistoryRepository}), this subclass passes {@code null} for both to
+     * {@code super(null, null)}: the superclass merely stores the references and never uses them,
+     * since every method that would touch a repository is overridden here. This keeps the slice
+     * completely free of JPA/PostgreSQL wiring.
      */
     static class FakeItemService extends ItemService {
 
@@ -367,12 +368,12 @@ class WriteAuthorizationPropertyTest {
         private final AtomicInteger counter = new AtomicInteger(0);
 
         /**
-         * Constructs the fake, passing {@code null} to the superclass repository field. That field
-         * is never dereferenced because all repository-touching methods are overridden below, so no
-         * database or JPA infrastructure is needed.
+         * Constructs the fake, passing {@code null} for both superclass repository fields. Those
+         * fields are never dereferenced because all repository-touching methods are overridden below,
+         * so no database or JPA infrastructure is needed.
          */
         FakeItemService() {
-            super(null);
+            super(null, null);
         }
 
         /**
@@ -389,7 +390,8 @@ class WriteAuthorizationPropertyTest {
             int newId = counter.incrementAndGet();
             // The created_by value is irrelevant to this authorization property; a fixed marker keeps
             // the DTO well-formed without reaching into the security context.
-            return new ItemDto((long) newId, request.name(), request.description(), "test-subject");
+            return new ItemDto((long) newId, request.name(), request.description(),
+                    request.category(), "test-subject");
         }
 
         /**

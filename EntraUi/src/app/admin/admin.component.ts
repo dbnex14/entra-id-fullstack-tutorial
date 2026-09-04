@@ -55,23 +55,27 @@ const API_BASE_URL = 'http://localhost:8080';
 
 /**
  * The request body accepted by the backend write endpoint. Mirrors the Java
- * `CreateItemRequest` record (`@NotBlank String name`, `String description`), so
- * `name` is required and `description` is optional.
+ * `CreateItemRequest` record (`@NotBlank String name`, `String description`,
+ * `String category`), so `name` is required and `description`/`category` are
+ * optional.
  */
 interface CreateItemRequest {
   name: string;
   description?: string;
+  category?: string;
 }
 
 /**
  * The request body accepted by the backend update endpoint
  * ({@code PUT /entra-backend/items/{id}}). Mirrors the Java `UpdateItemRequest`
- * record (`@NotBlank String name`, `String description`) — same shape as the
- * create body: `name` is required, `description` is optional.
+ * record (`@NotBlank String name`, `String description`, `String category`) —
+ * same shape as the create body: `name` is required, `description`/`category`
+ * are optional.
  */
 interface UpdateItemRequest {
   name: string;
   description?: string;
+  category?: string;
 }
 
 @Component({
@@ -136,6 +140,19 @@ interface UpdateItemRequest {
           />
         </label>
 
+        <!-- Optional category. Admin-only to edit, matching the write-gating: the
+             whole /admin screen is Admin-gated (route guard + server hasRole). -->
+        <label class="admin__field">
+          <span>Category</span>
+          <input
+            name="category"
+            type="text"
+            placeholder="e.g. hardware, software, service"
+            [ngModel]="category()"
+            (ngModelChange)="category.set($event)"
+          />
+        </label>
+
         <button type="submit" [disabled]="submitting() || name().trim().length === 0">
           @if (submitting()) { Creating… } @else { Create }
         </button>
@@ -176,7 +193,7 @@ interface UpdateItemRequest {
         <ul class="admin__item-list">
           @for (item of items(); track item.id) {
             <li class="admin__item-row">
-              <span>#{{ item.id }} — {{ item.name }}</span>
+              <span>#{{ item.id }} — {{ item.name }}@if (item.category) { <em>({{ item.category }})</em> }</span>
               <span class="admin__item-actions">
                 <button type="button" (click)="beginEdit(item)">Edit</button>
                 <button
@@ -220,6 +237,17 @@ interface UpdateItemRequest {
               type="text"
               [ngModel]="editDescription()"
               (ngModelChange)="editDescription.set($event)"
+            />
+          </label>
+
+          <label class="admin__field">
+            <span>Category</span>
+            <input
+              name="editCategory"
+              type="text"
+              placeholder="e.g. hardware, software, service"
+              [ngModel]="editCategory()"
+              (ngModelChange)="editCategory.set($event)"
             />
           </label>
 
@@ -273,6 +301,9 @@ export class AdminComponent implements OnInit {
   /** Bound to the optional "description" input. */
   readonly description = signal<string>('');
 
+  /** Bound to the optional "category" input (Admin-only to edit). */
+  readonly category = signal<string>('');
+
   // ── Request state (signals) ────────────────────────────────────────────────
 
   /** True while the POST /entra-backend/items request is in flight. */
@@ -300,6 +331,9 @@ export class AdminComponent implements OnInit {
 
   /** Bound to the edit form's optional "description" input. */
   readonly editDescription = signal<string>('');
+
+  /** Bound to the edit form's optional "category" input. */
+  readonly editCategory = signal<string>('');
 
   /** True while the PUT /entra-backend/items/{id} request is in flight. */
   readonly saving = signal<boolean>(false);
@@ -359,6 +393,8 @@ export class AdminComponent implements OnInit {
       // Send description only when the user typed something; otherwise omit it
       // so the backend stores null for the nullable column.
       description: this.description().trim() || undefined,
+      // Same treatment for the optional category label.
+      category: this.category().trim() || undefined,
     };
 
     // POST to the Admin-only endpoint. `hasRole('Admin')` on the server decides
@@ -370,6 +406,7 @@ export class AdminComponent implements OnInit {
         this.created.set(item);
         this.name.set('');
         this.description.set('');
+        this.category.set('');
         this.submitting.set(false);
       },
       error: (err: HttpErrorResponse) => {
@@ -410,6 +447,7 @@ export class AdminComponent implements OnInit {
     this.editingId.set(item.id);
     this.editName.set(item.name);
     this.editDescription.set(item.description ?? '');
+    this.editCategory.set(item.category ?? '');
     // Clear any prior update result/error so the form starts clean.
     this.updated.set(null);
     this.editErrorMessage.set('');
@@ -423,6 +461,7 @@ export class AdminComponent implements OnInit {
     this.editingId.set(null);
     this.editName.set('');
     this.editDescription.set('');
+    this.editCategory.set('');
   }
 
   /**
@@ -455,6 +494,7 @@ export class AdminComponent implements OnInit {
     const body: UpdateItemRequest = {
       name: trimmedName,
       description: this.editDescription().trim() || undefined,
+      category: this.editCategory().trim() || undefined,
     };
 
     // PUT to the Admin-only endpoint. `hasRole('Admin')` on the server decides

@@ -36,6 +36,7 @@ Response body (array of `ItemDto`):
     "id": 1,
     "name": "Sample item",
     "description": "An example item",
+    "category": "hardware",
     "createdBy": "00000000-0000-0000-0000-000000000000"
   }
 ]
@@ -54,16 +55,18 @@ Create a new item.
 
 - **Required role:** `Admin` (`hasRole('Admin')`).
 - **Request body:** `CreateItemRequest` - `name` is required (non-blank);
-  `description` is optional.
+  `description` and `category` are optional.
 - **Success:** `201 Created` with the created `ItemDto`.
 - **Validation:** a blank `name` yields `400 Bad Request`.
 - The server sets `createdBy` from the token subject (oid/sub); the client does
   not (and cannot) supply it.
+- Creating records a `CREATE` entry in the change history (see `GET
+  /entra-backend/history`).
 
 Request body:
 
 ```json
-{ "name": "New item", "description": "Optional text" }
+{ "name": "New item", "description": "Optional text", "category": "hardware" }
 ```
 
 Example:
@@ -82,11 +85,11 @@ Update an existing item.
 - **Required role:** `Admin` (`hasRole('Admin')`).
 - **Path variable:** `id` - the item id (long).
 - **Request body:** `UpdateItemRequest` - `name` is required (non-blank);
-  `description` optional.
+  `description` and `category` optional.
 - **Success:** `200 OK` with the updated `ItemDto`.
 - **Not found:** `404 Not Found` if no item exists for `id`.
 - Updating refreshes `updated_at`; the original `createdBy`/`created_at`
-  (provenance) are not changed.
+  (provenance) are not changed. Records an `UPDATE` change-history entry.
 
 Example:
 
@@ -107,12 +110,66 @@ Delete an existing item.
 - **Not found:** `404 Not Found` if no item exists for `id`.
 - The delete is a hard delete of the `item` row. The corresponding
   `access_audit` record of the request is written independently, so the fact that
-  an Admin issued the delete remains traceable.
+  an Admin issued the delete remains traceable. A `DELETE` change-history entry is
+  also recorded *before* the row is removed; because the `item_history` foreign
+  key is `ON DELETE SET NULL`, that entry survives the delete (with `itemId`
+  becoming `null`).
 
 Example:
 
 ```bash
 curl -i -X DELETE http://localhost:8080/entra-backend/items/1 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### GET /entra-backend/items/{id}/history
+
+List the change history for a single item, newest first.
+
+- **Required role:** `Viewer` or `Admin` (`hasAnyRole('Viewer','Admin')`).
+- **Path variable:** `id` - the item id (long).
+- **Success:** `200 OK` with a JSON array of `ItemHistoryDto` (empty array if the
+  item has no recorded history, or the id is unknown/since-deleted - this endpoint
+  does **not** 404, because history may outlive its item).
+
+Response body (array of `ItemHistoryDto`):
+
+```json
+[
+  {
+    "id": 12,
+    "itemId": 1,
+    "changeType": "UPDATE",
+    "actorSubject": "00000000-0000-0000-0000-000000000000",
+    "actorName": "Ada Admin",
+    "details": "Updated item #1: name 'Widget' -> 'Gadget', category 'null' -> 'hardware'",
+    "changedAt": "2026-01-15T10:22:31.512Z"
+  }
+]
+```
+
+Example:
+
+```bash
+curl -i http://localhost:8080/entra-backend/items/1/history \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### GET /entra-backend/history
+
+List the entire item change log across all items, newest first.
+
+- **Required role:** `Viewer` or `Admin` (`hasAnyRole('Viewer','Admin')`).
+- **Success:** `200 OK` with a JSON array of `ItemHistoryDto` (empty if no
+  changes have been recorded).
+- Includes entries whose originating item was later deleted; those carry
+  `"itemId": null`. This is the value of the global log - the record of a deletion
+  is retained even after the item is gone.
+
+Example:
+
+```bash
+curl -i http://localhost:8080/entra-backend/history \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -176,6 +233,7 @@ Notes for Postman:
 | `id` | number | Database-assigned identifier |
 | `name` | string | Item name |
 | `description` | string \| null | Optional description |
+| `category` | string \| null | Optional short label (e.g. hardware/software/service) |
 | `createdBy` | string | Token subject (oid/sub) that created the row |
 
 `CreateItemRequest` / `UpdateItemRequest` (request):
@@ -184,17 +242,30 @@ Notes for Postman:
 | --- | --- | --- |
 | `name` | string | Required, must be non-blank (`@NotBlank`) |
 | `description` | string \| null | Optional |
+| `category` | string \| null | Optional short label |
+
+`ItemHistoryDto` (response):
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | number | Database-assigned identifier of the history row |
+| `itemId` | number \| null | The changed item's id; `null` if that item was later deleted |
+| `changeType` | string | One of `CREATE`, `UPDATE`, `DELETE` |
+| `actorSubject` | string | Token subject (oid/sub) of the acting identity |
+| `actorName` | string \| null | Acting identity's display name (`name` claim) if present |
+| `details` | string | Human-readable summary of the change |
+| `changedAt` | string | ISO-8601 timestamp with offset |
 
 ## Status matrix
 
 The authorization behavior across identities and endpoints:
 
-| Identity | GET /items | POST /items | PUT /items/{id} | DELETE /items/{id} |
-| --- | --- | --- | --- | --- |
-| Anonymous (no token) | 401 | 401 | 401 | 401 |
-| Invalid/expired token | 401 | 401 | 401 | 401 |
-| Viewer | 200 | 403 | 403 | 403 |
-| Admin | 200 | 201 | 200 | 204 |
+| Identity | GET /items | POST /items | PUT /items/{id} | DELETE /items/{id} | GET /items/{id}/history | GET /history |
+| --- | --- | --- | --- | --- | --- | --- |
+| Anonymous (no token) | 401 | 401 | 401 | 401 | 401 | 401 |
+| Invalid/expired token | 401 | 401 | 401 | 401 | 401 | 401 |
+| Viewer | 200 | 403 | 403 | 403 | 200 | 200 |
+| Admin | 200 | 201 | 200 | 204 | 200 | 200 |
 
 (Paths abbreviated; all are under `/entra-backend`.)
 

@@ -101,6 +101,28 @@ class ItemController {
     }
 
     /**
+     * Read endpoint: lists the change history for a single item, newest first.
+     *
+     * <p>{@code @PreAuthorize("hasAnyRole('Viewer','Admin')")} mirrors the item read rule (R8.1):
+     * history is observational data, so both Viewer and Admin may read it &mdash; even though only
+     * Admin can <em>generate</em> it (only Admin can write items). The {@code {id}} path segment is
+     * bound to {@code long id} via {@code @PathVariable}.
+     *
+     * <p>This returns HTTP 200 with the (possibly empty) list of {@link ItemHistoryDto}. It
+     * deliberately does <em>not</em> 404 for an unknown/since-deleted id: history is allowed to
+     * outlive its item, so a caller polling a deleted id gets a clean empty list rather than an error
+     * (a deleted item's rows have a null {@code item_id} and appear only in the global log).
+     *
+     * @param id the id of the item whose history is requested (from the path)
+     * @return that item's history as DTOs, newest first (HTTP 200)
+     */
+    @GetMapping("/{id}/history")
+    @PreAuthorize("hasAnyRole('Viewer','Admin')")
+    List<ItemHistoryDto> history(@PathVariable long id) {
+        return service.findHistoryForItem(id);
+    }
+
+    /**
      * Write endpoint: creates a new item.
      *
      * <p>{@code @PreAuthorize("hasRole('Admin')")} restricts this to callers whose token granted
