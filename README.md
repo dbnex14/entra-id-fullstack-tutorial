@@ -48,7 +48,6 @@ entra-id-fullstack-tutorial/
     src/main/java/...     security, item domain, audit
     src/main/resources/   application.yml, Flyway migrations
     src/test/java/...     jqwik property tests + security-slice tests
-    VERIFICATION.md       manual verification procedures
   EntraUi/                Angular 19 standalone SPA
     src/app/auth/         MSAL config, session store, refresh service,
                           interceptor, route guards
@@ -56,13 +55,16 @@ entra-id-fullstack-tutorial/
   GUIDE/                  How-to guides (learning path + running instructions)
     LEARNING-GUIDE.md     file-by-file reading order to learn the whole system
     RUNNING-GUIDE.md      run locally (any OS) and what to expect
-    RUNNING-MAC-GUIDE.md  macOS (Intel/Big Sur) setup, step by step
+    RUNNING-MAC-GUIDE.md  macOS (Intel/Monterey) setup, step by step
+    TOKEN-VERIFICATION-GUIDE.md  manual token/identity-flow verification (live login)
   DOC/                    Reference documentation (this set)
     ARCHITECTURE.md       components, request flows, design decisions
     API.md                REST endpoint reference + status matrix
     SECURITY.md           token validation, roles, CORS, the trust boundary
     DATABASE.md           schema, Flyway, the audit trail
     CONFIGURATION.md      every setting and identity constant, and how to change it
+    AGENT-HOOKS.md        the .kiro/hooks automation, its limits, and CI enforcement
+    PROJECT-STRUCTURE.md  doc map, the .kiro/ + .vscode/ dirs, and frontend components
   .kiro/specs/...         the original requirements + design spec
 ```
 
@@ -123,7 +125,10 @@ cd EntraUi && npm test -- --watch=false --browsers=ChromeHeadless
   [ARCHITECTURE](DOC/ARCHITECTURE.md) - [API](DOC/API.md) -
   [SECURITY](DOC/SECURITY.md) - [DATABASE](DOC/DATABASE.md) -
   [CONFIGURATION](DOC/CONFIGURATION.md).
-- **Want to validate a live login?** Follow `entra-backend/VERIFICATION.md`.
+- **Want a map of every file?** See [PROJECT-STRUCTURE](DOC/PROJECT-STRUCTURE.md) -
+  the doc map, the `.kiro/` and `.vscode/` directories, and a per-component
+  frontend reference.
+- **Want to validate a live login?** Follow `GUIDE/TOKEN-VERIFICATION-GUIDE.md`.
 
 ---
 

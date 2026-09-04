@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,9 +90,11 @@ class ItemServiceHistoryTest {
         OffsetDateTime now = OffsetDateTime.now();
         Item existing = new Item("Old", "d", "software", "creator-oid", now, now);
         existing.setId(42L);
-        when(itemRepository.findById(42L)).thenReturn(Optional.of(existing));
+        UUID publicId = UUID.randomUUID();
+        existing.setPublicId(publicId);
+        when(itemRepository.findByPublicId(publicId)).thenReturn(Optional.of(existing));
 
-        service.update(42L, new UpdateItemRequest("New", "d2", "service"));
+        service.update(publicId, new UpdateItemRequest("New", "d2", "service"));
 
         ItemHistory saved = captureSavedHistory();
         assertThat(saved.getChangeType()).isEqualTo(ItemHistory.ChangeType.UPDATE);
@@ -105,9 +108,11 @@ class ItemServiceHistoryTest {
         OffsetDateTime now = OffsetDateTime.now();
         Item existing = new Item("Doomed", "d", "hardware", "creator-oid", now, now);
         existing.setId(99L);
-        when(itemRepository.findById(99L)).thenReturn(Optional.of(existing));
+        UUID publicId = UUID.randomUUID();
+        existing.setPublicId(publicId);
+        when(itemRepository.findByPublicId(publicId)).thenReturn(Optional.of(existing));
 
-        service.delete(99L);
+        service.delete(publicId);
 
         ItemHistory saved = captureSavedHistory();
         assertThat(saved.getChangeType()).isEqualTo(ItemHistory.ChangeType.DELETE);
@@ -119,10 +124,11 @@ class ItemServiceHistoryTest {
 
     @Test
     void deleteOfMissingItemThrows404AndWritesNoHistory() {
-        when(itemRepository.findById(1234L)).thenReturn(Optional.empty());
+        UUID missing = UUID.randomUUID();
+        when(itemRepository.findByPublicId(missing)).thenReturn(Optional.empty());
 
         try {
-            service.delete(1234L);
+            service.delete(missing);
         } catch (ResponseStatusException expected) {
             // A missing id yields a clean 404 and must NOT append a spurious history row.
         }

@@ -1,12 +1,16 @@
 package com.example.entraoauth.item;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
+
+import com.github.f4b6a3.uuid.UuidCreator;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 /**
@@ -68,6 +72,29 @@ public class Item {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    /**
+     * Opaque, non-sequential PUBLIC identifier. Maps to {@code public_id UUID NOT NULL UNIQUE}
+     * (added by {@code V3__public_ids.sql}).
+     *
+     * <p><strong>Why this exists alongside {@link #id}.</strong> The numeric {@link #id} is a fast,
+     * sequential {@code BIGSERIAL} used <em>internally</em> as the primary key and for foreign keys.
+     * But a sequential id is guessable/enumerable, so exposing it over the API would leak row counts
+     * and ordering (information disclosure). This {@code publicId} is what the REST API exposes
+     * instead &mdash; in JSON bodies and in {@code /items/{publicId}} URLs &mdash; so the internal
+     * sequence never crosses the wire. This is <em>defence in depth</em>: the actual access control
+     * is the claim-driven {@code @PreAuthorize} role checks; an opaque id is never a substitute for
+     * an authorization decision.
+     *
+     * <p><strong>How it is generated.</strong> A time-ordered <strong>UUIDv7</strong> (RFC 9562) is
+     * minted by the application in {@link #onCreate()} via
+     * {@link UuidCreator#getTimeOrderedEpoch()}. It is generated in Java rather than by the database
+     * because PostgreSQL's native {@code uuidv7()} only exists from PG 18 and this project runs on
+     * PG 17. UUIDv7 is time-ordered, so as an indexed key it keeps good insert locality (unlike a
+     * random UUIDv4) while remaining non-enumerable.
+     */
+    @Column(name = "public_id", nullable = false, unique = true, updatable = false)
+    private UUID publicId;
 
     /**
      * Human-readable name of the item. Maps to {@code name VARCHAR(200) NOT NULL}. The
@@ -158,6 +185,40 @@ public class Item {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    /**
+     * JPA lifecycle callback that assigns the opaque {@link #publicId} immediately before the row is
+     * first inserted, if one has not already been set. A time-ordered <strong>UUIDv7</strong> is
+     * generated in-application (see the {@link #publicId} field doc for why generation lives here and
+     * not in PostgreSQL). Guarded by a null check so an explicitly-set value (e.g. in a test) is
+     * preserved.
+     */
+    @PrePersist
+    void onCreate() {
+        if (this.publicId == null) {
+            this.publicId = UuidCreator.getTimeOrderedEpoch();
+        }
+    }
+
+    /**
+     * The opaque public identifier exposed by the API in place of the internal {@link #id}. See the
+     * field documentation for the rationale.
+     *
+     * @return the row's UUIDv7 public id (never {@code null} once persisted)
+     */
+    public UUID getPublicId() {
+        return publicId;
+    }
+
+    /**
+     * Sets the opaque public id. Normally assigned automatically by {@link #onCreate()} on first
+     * persist; this setter exists mainly so tests can seed a deterministic value.
+     *
+     * @param publicId the public id to set
+     */
+    public void setPublicId(UUID publicId) {
+        this.publicId = publicId;
     }
 
     public String getName() {

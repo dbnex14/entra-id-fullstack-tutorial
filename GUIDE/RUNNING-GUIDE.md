@@ -275,7 +275,7 @@ flow and what you should observe:
   and a new `access_token`. Fire several API calls at once and confirm only
   **one** token call happens (single-flight coalescing).
 
-`entra-backend/VERIFICATION.md` documents these three procedures in full detail.
+`GUIDE/TOKEN-VERIFICATION-GUIDE.md` documents these three procedures in full detail.
 
 ### Observe server-side authorization outcomes
 

@@ -1,12 +1,12 @@
-# Running on macOS - Setup Guide (MacBook Pro 2015, macOS Big Sur)
+# Running on macOS - Setup Guide (MacBook Pro 2015, macOS Monterey)
 
-This guide takes a fresh 2015 MacBook Pro (Intel x86_64) on macOS Big Sur from
+This guide takes a fresh 2015 MacBook Pro (Intel x86_64) on macOS Monterey from
 nothing to running both projects locally, using **Visual Studio Code** and
 **IntelliJ IDEA**. No Kiro and no Docker are required.
 
 Your Mac hardware is **Intel (x86_64)**, not Apple Silicon - this matters when
 you download the JDK and when Homebrew warns about your OS version. Every step
-below assumes Intel + Big Sur.
+below assumes Intel + Monterey.
 
 Everything lives in **one GitHub repository** (a monorepo):
 
@@ -43,9 +43,9 @@ git --version
 
 ### 1b. Homebrew (package manager)
 
-Big Sur is past Homebrew's officially supported window, so you may see a warning
-like "You are using macOS 11. We do not provide support for this version." That
-warning is fine for what we need. Install Homebrew:
+Monterey (macOS 12) is likewise past Homebrew's officially supported window, so
+you may see a warning like "You are using macOS 12. We do not provide support for
+this version." That warning is fine for what we need. Install Homebrew:
 
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -57,7 +57,7 @@ On Intel Macs Homebrew installs to `/usr/local`. Verify:
 brew --version
 ```
 
-> If a specific formula later fails to build from source on Big Sur, install a
+> If a specific formula later fails to build from source on Monterey, install a
 > slightly older version or use a direct installer (noted per tool below).
 
 ### 1c. JDK 21 (Intel x86_64 build)
@@ -80,7 +80,7 @@ Verify it is 21:
 java -version                    # should report 21.x
 ```
 
-Set `JAVA_HOME` for your shell (Big Sur default shell is zsh):
+Set `JAVA_HOME` for your shell (Monterey default shell is zsh):
 
 ```bash
 echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 21)' >> ~/.zshrc
@@ -100,8 +100,8 @@ If `mvn` reports a Java version other than 21, your `JAVA_HOME` is wrong - fix
 
 ### 1e. Node.js + npm (for Angular 19)
 
-Angular 19 needs Node 18+ (Node 20 LTS recommended). On Big Sur the cleanest path
-is `nvm` (avoids Homebrew Node build issues on an old OS):
+Angular 19 needs Node 18+ (Node 20 LTS recommended). On Monterey the cleanest path
+is `nvm` (avoids Homebrew Node build issues on an older OS):
 
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
@@ -113,7 +113,7 @@ node --version                   # v20.x
 npm --version
 ```
 
-(Alternatively `brew install node`, but nvm is more forgiving on Big Sur.)
+(Alternatively `brew install node`, but nvm is more forgiving on Monterey.)
 
 ### 1f. PostgreSQL
 
@@ -385,7 +385,7 @@ registration):
 - Authenticated dashboard reads, the Admin write path, and real `access_audit`
   rows.
 
-No macOS/Intel/Big Sur blocker exists for any of this. The one thing that needs
+No macOS/Intel/Monterey blocker exists for any of this. The one thing that needs
 cloud setup is the **Entra app registration / redirect URI** for live login
 (Section 8). Everything else is standard toolchain setup, and the whole codebase
 now comes down in a single `git clone`.

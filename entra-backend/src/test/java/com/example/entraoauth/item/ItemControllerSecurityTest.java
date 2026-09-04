@@ -1,7 +1,6 @@
 package com.example.entraoauth.item;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -10,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -149,17 +149,18 @@ class ItemControllerSecurityTest {
 
         // Stub the read path: an authorized GET returns this list and yields 200.
         when(itemService.findAll())
-                .thenReturn(List.of(new ItemDto(1L, "existing", "seeded item", "hardware", "subject-oid")));
+                .thenReturn(List.of(new ItemDto(UUID.randomUUID(), "existing", "seeded item", "hardware", "subject-oid")));
 
         // Stub the write path: an Admin POST returns this DTO, which the controller wraps in 201.
         when(itemService.create(any(CreateItemRequest.class)))
-                .thenReturn(new ItemDto(2L, "created", "created via POST", "software", "admin-oid"));
+                .thenReturn(new ItemDto(UUID.randomUUID(), "created", "created via POST", "software", "admin-oid"));
 
         // Stub the per-item history read path: an authorized GET returns this list and yields 200.
-        // (The 403/401 paths never reach this stub, which is exactly what we assert.)
-        when(itemService.findHistoryForItem(anyLong()))
+        // (The 403/401 paths never reach this stub, which is exactly what we assert.) The lookup key
+        // is now the item's opaque public id (UUID), so we match any UUID here.
+        when(itemService.findHistoryForItem(any(UUID.class)))
                 .thenReturn(List.of(new ItemHistoryDto(
-                        7L, 1L, ItemHistory.ChangeType.CREATE,
+                        UUID.randomUUID(), UUID.randomUUID(), ItemHistory.ChangeType.CREATE,
                         "subject-oid", "Ada Admin", "Created item 'existing'",
                         java.time.OffsetDateTime.parse("2026-01-15T10:22:31.512Z"))));
     }
@@ -267,7 +268,7 @@ class ItemControllerSecurityTest {
      */
     @Test
     void viewerCanReadItemHistory() throws Exception {
-        mockMvc.perform(get("/items/1/history")
+        mockMvc.perform(get("/items/11111111-1111-1111-1111-111111111111/history")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_Viewer"))))
                 .andExpect(status().isOk());
     }
@@ -277,7 +278,7 @@ class ItemControllerSecurityTest {
      */
     @Test
     void adminCanReadItemHistory() throws Exception {
-        mockMvc.perform(get("/items/1/history")
+        mockMvc.perform(get("/items/11111111-1111-1111-1111-111111111111/history")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_Admin"))))
                 .andExpect(status().isOk());
     }
@@ -289,7 +290,7 @@ class ItemControllerSecurityTest {
      */
     @Test
     void anonymousReadItemHistoryIsUnauthorized() throws Exception {
-        mockMvc.perform(get("/items/1/history"))
+        mockMvc.perform(get("/items/11111111-1111-1111-1111-111111111111/history"))
                 .andExpect(status().isUnauthorized());
     }
 

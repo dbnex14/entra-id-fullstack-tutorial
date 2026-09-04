@@ -54,7 +54,7 @@ Method security is enabled (`@EnableMethodSecurity`), and endpoints are gated wi
 `@PreAuthorize`:
 
 - `GET /entra-backend/items` - `hasAnyRole('Viewer','Admin')`.
-- `GET /entra-backend/items/{id}/history` - `hasAnyRole('Viewer','Admin')`.
+- `GET /entra-backend/items/{publicId}/history` - `hasAnyRole('Viewer','Admin')`.
 - `GET /entra-backend/history` - `hasAnyRole('Viewer','Admin')`.
 - `POST` / `PUT` / `DELETE /entra-backend/items` - `hasRole('Admin')`.
 

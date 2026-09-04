@@ -3,6 +3,9 @@ package com.example.entraoauth.item;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+import java.util.UUID;
+
 /**
  * Spring Data JPA repository for the {@link Item} entity.
  *
@@ -58,7 +61,21 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface ItemRepository extends JpaRepository<Item, Long> {
-    // Intentionally empty: all read (findAll) and write (save) operations used by the
-    // role-protected endpoints, plus count() used by the no-mutation-on-403 property test,
-    // are inherited from JpaRepository<Item, Long>.
+    // Read (findAll) and write (save) plus count() (for the no-mutation-on-403 property test) are
+    // inherited from JpaRepository<Item, Long>. The one derived method below powers the API's
+    // lookup by the opaque public id.
+
+    /**
+     * Finds an item by its opaque public identifier (the {@code public_id UUID} exposed over the
+     * API), rather than by the internal sequential {@link Item#getId() BIGINT id}. This is what the
+     * {@code PUT}/{@code DELETE}/{@code GET .../history} endpoints use to resolve the
+     * {@code {publicId}} path variable to a row, so the internal numeric id never appears in a URL.
+     *
+     * <p>Backed by the {@code uq_item_public_id} unique index from {@code V3__public_ids.sql}, so the
+     * lookup is a single indexed read.
+     *
+     * @param publicId the opaque public id from the request path
+     * @return the matching item, or {@link Optional#empty()} if none exists
+     */
+    Optional<Item> findByPublicId(UUID publicId);
 }

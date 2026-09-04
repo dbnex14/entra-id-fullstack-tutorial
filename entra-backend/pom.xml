@@ -65,6 +65,21 @@
           CORS, write authorization, etc.).
         -->
         <jqwik.version>1.9.3</jqwik.version>
+
+        <!--
+          uuid-creator supplies the UUIDv7 (RFC 9562) generator used to mint the
+          opaque public_id exposed by the API in place of the sequential BIGINT
+          primary key. We generate the identifier in the APPLICATION (not the
+          database) because PostgreSQL only gained a native uuidv7() function in
+          PG 18, and this project targets PostgreSQL 17 - generating it in Java
+          keeps the code portable across PG versions. UUIDv7 is time-ordered, so
+          it preserves good B-tree index locality on insert (unlike random
+          UUIDv4), while still being non-sequential and non-enumerable on the
+          wire. Pinned to 6.1.1 (the current stable release) for reproducible
+          builds; it runs on Java 8+ and is therefore fine on this project's
+          Java 21.
+        -->
+        <uuid-creator.version>6.1.1</uuid-creator.version>
     </properties>
 
     <dependencies>
@@ -154,6 +169,24 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
+        </dependency>
+
+        <!--
+          ==== UUIDv7 generator (opaque public identifiers) ====
+          uuid-creator generates RFC 9562 UUIDs, including the time-ordered
+          UUIDv7 used for each row's public_id. The API exposes this public_id
+          instead of the internal sequential BIGINT primary key, so clients never
+          see a guessable/enumerable id (defence-in-depth against row-count and
+          ordering disclosure; the real access control remains claim-driven role
+          checks). We mint it in the application via
+          UuidCreator.getTimeOrderedEpoch() rather than in the database, because
+          PostgreSQL's native uuidv7() only exists from PG 18 and this project
+          runs on PG 17. Version pinned via ${uuid-creator.version}.
+        -->
+        <dependency>
+            <groupId>com.github.f4b6a3</groupId>
+            <artifactId>uuid-creator</artifactId>
+            <version>${uuid-creator.version}</version>
         </dependency>
 
         <!--

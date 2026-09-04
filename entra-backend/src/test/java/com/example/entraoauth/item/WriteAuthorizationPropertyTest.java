@@ -387,10 +387,14 @@ class WriteAuthorizationPropertyTest {
          */
         @Override
         public ItemDto create(CreateItemRequest request) {
-            int newId = counter.incrementAndGet();
+            // Bump the counter for its side effect: the property body snapshots this count to assert
+            // that an authorized (Admin) write increments it while a forbidden write does not.
+            counter.incrementAndGet();
             // The created_by value is irrelevant to this authorization property; a fixed marker keeps
-            // the DTO well-formed without reaching into the security context.
-            return new ItemDto((long) newId, request.name(), request.description(),
+            // the DTO well-formed without reaching into the security context. The exposed id is an
+            // opaque UUID (public id), not the internal numeric key; a fresh random UUID is fine here
+            // since this fake only needs a well-formed, unique-looking value per created item.
+            return new ItemDto(java.util.UUID.randomUUID(), request.name(), request.description(),
                     request.category(), "test-subject");
         }
 

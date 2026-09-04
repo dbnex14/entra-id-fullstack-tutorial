@@ -2,6 +2,7 @@ package com.example.entraoauth.item;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -121,18 +122,18 @@ public class ItemService {
     /**
      * Reads the change log for a single item, most recent change first.
      *
-     * <p>This backs the read endpoint {@code GET /entra-backend/items/{id}/history}, permitted for
-     * {@code ROLE_Viewer} or {@code ROLE_Admin}. Note we do <em>not</em> require the item to still
-     * exist: history is deliberately allowed to outlive the item (a deleted item's rows have a null
-     * {@code item_id} and thus will not match this per-item query, but the endpoint still returns an
-     * empty list rather than a 404, so a Viewer polling a since-deleted id gets a clean, empty result
-     * rather than an error).
+     * <p>This backs the read endpoint {@code GET /entra-backend/items/{publicId}/history}, permitted
+     * for {@code ROLE_Viewer} or {@code ROLE_Admin}. Note we do <em>not</em> require the item to
+     * still exist: history is deliberately allowed to outlive the item (a deleted item's rows have a
+     * null {@code item_id} and thus will not match this per-item query, but the endpoint still
+     * returns an empty list rather than a 404, so a Viewer polling a since-deleted id gets a clean,
+     * empty result rather than an error).
      *
-     * @param itemId the id of the item whose history is requested
+     * @param itemPublicId the opaque public id of the item whose history is requested
      * @return that item's history as read-only DTOs, newest first (empty if none)
      */
-    public List<ItemHistoryDto> findHistoryForItem(long itemId) {
-        return historyRepository.findByItem_IdOrderByChangedAtDesc(itemId).stream()
+    public List<ItemHistoryDto> findHistoryForItem(UUID itemPublicId) {
+        return historyRepository.findByItem_PublicIdOrderByChangedAtDesc(itemPublicId).stream()
                 .map(this::toHistoryDto)
                 .toList();
     }
@@ -181,8 +182,8 @@ public class ItemService {
     /**
      * Updates the mutable fields of an existing {@code item}.
      *
-     * <p>This backs the write endpoint ({@code PUT /entra-backend/items/{id}}), which the controller permits
-     * for {@code ROLE_Admin} only (R8.2, R8.3). If no row exists for {@code id}, a
+     * <p>This backs the write endpoint ({@code PUT /entra-backend/items/{publicId}}), which the controller permits
+     * for {@code ROLE_Admin} only (R8.2, R8.3). If no row exists for {@code publicId}, a
      * {@link ResponseStatusException} with {@link HttpStatus#NOT_FOUND 404} is thrown so the client
      * receives a clean 404 rather than an opaque error.
      *
@@ -193,15 +194,15 @@ public class ItemService {
      * {@code UPDATE} {@link ItemHistory} row is appended summarizing the before/after of the
      * human-facing fields and recording the acting identity.
      *
-     * @param id      the identifier of the item to update
-     * @param request the validated update request ({@code name} is {@code @NotBlank})
+     * @param publicId the opaque public id of the item to update
+     * @param request  the validated update request ({@code name} is {@code @NotBlank})
      * @return the updated item projected to a DTO
-     * @throws ResponseStatusException with status 404 if no item exists for {@code id}
+     * @throws ResponseStatusException with status 404 if no item exists for {@code publicId}
      */
-    public ItemDto update(long id, UpdateItemRequest request) {
-        Item item = repository.findById(id)
+    public ItemDto update(UUID publicId, UpdateItemRequest request) {
+        Item item = repository.findByPublicId(publicId)
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Item not found: " + id));
+                        HttpStatus.NOT_FOUND, "Item not found: " + publicId));
 
         // Capture the "before" values so the history summary can describe what actually changed.
         // (We snapshot into locals because we are about to overwrite the entity's fields.)
@@ -221,8 +222,9 @@ public class ItemService {
         Item saved = repository.save(item);
 
         // Append an UPDATE history row summarizing the before -> after of the human-facing fields.
+        // The summary references the item's OPAQUE public id, never the internal numeric id.
         recordHistory(saved, ItemHistory.ChangeType.UPDATE, now,
-                "Updated item #" + saved.getId()
+                "Updated item " + saved.getPublicId()
                         + ": name '" + beforeName + "' -> '" + saved.getName() + "'"
                         + ", category '" + beforeCategory + "' -> '" + saved.getCategory() + "'");
 
@@ -232,10 +234,10 @@ public class ItemService {
     /**
      * Deletes an existing {@code item} identified by {@code id}.
      *
-     * <p>This backs the write endpoint ({@code DELETE /entra-backend/items/{id}}), which the
+     * <p>This backs the write endpoint ({@code DELETE /entra-backend/items/{publicId}}), which the
      * controller permits for {@code ROLE_Admin} only (R8.2, R8.3); a non-Admin authenticated caller
      * is stopped by method security with 403 before this runs, so no row is removed. If no row
-     * exists for {@code id}, a {@link ResponseStatusException} with {@link HttpStatus#NOT_FOUND 404}
+     * exists for {@code publicId}, a {@link ResponseStatusException} with {@link HttpStatus#NOT_FOUND 404}
      * is thrown so the client receives a clean 404 rather than a silent no-op &mdash; making a delete
      * of a non-existent id observably distinct from a successful delete.
      *
@@ -247,15 +249,15 @@ public class ItemService {
      * the request (subject, authorities, method, path, status) is also written independently by the
      * audit filter, so the fact that an Admin issued the delete remains traceable.
      *
-     * @param id the identifier of the item to delete
-     * @throws ResponseStatusException with status 404 if no item exists for {@code id}
+     * @param publicId the opaque public id of the item to delete
+     * @throws ResponseStatusException with status 404 if no item exists for {@code publicId}
      */
-    public void delete(long id) {
+    public void delete(UUID publicId) {
         // Load the row first (rather than existsById) for two reasons: a missing id yields a clean
         // 404, and we need the item's current fields to write a meaningful DELETE history entry.
-        Item item = repository.findById(id)
+        Item item = repository.findByPublicId(publicId)
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Item not found: " + id));
+                        HttpStatus.NOT_FOUND, "Item not found: " + publicId));
 
         // Record the DELETE history BEFORE removing the item. Ordering matters:
         //   * writing history first means the foreign key still references a live item row, and the
@@ -265,7 +267,7 @@ public class ItemService {
         //     deleted, by whom, and when) SURVIVES -- which is the whole point of an audit trail.
         OffsetDateTime now = OffsetDateTime.now();
         recordHistory(item, ItemHistory.ChangeType.DELETE, now,
-                "Deleted item #" + item.getId() + " '" + item.getName() + "'"
+                "Deleted item " + item.getPublicId() + " '" + item.getName() + "'"
                         + (item.getCategory() != null ? " [category: " + item.getCategory() + "]" : ""));
 
         repository.delete(item);
@@ -359,7 +361,7 @@ public class ItemService {
      */
     private ItemDto toDto(Item item) {
         return new ItemDto(
-                item.getId(),
+                item.getPublicId(),
                 item.getName(),
                 item.getDescription(),
                 item.getCategory(),
@@ -368,17 +370,18 @@ public class ItemService {
 
     /**
      * Maps a persistence-managed {@link ItemHistory} entity to the immutable {@link ItemHistoryDto}
-     * exposed on the API boundary. Uses {@link ItemHistory#getItemId()} so we read the already-stored
-     * foreign key without forcing a lazy load of the parent {@link Item}; the id is {@code null} for a
-     * history row whose item was later deleted.
+     * exposed on the API boundary. Uses {@link ItemHistory#getItemPublicId()} so we read the parent
+     * item's opaque public id (matching what the client sees in the item list) without forcing a lazy
+     * load beyond the already-referenced association; the item id is {@code null} for a history row
+     * whose item was later deleted. The row's own id is its opaque {@code publicId}.
      *
      * @param history the entity to project
      * @return the corresponding DTO
      */
     private ItemHistoryDto toHistoryDto(ItemHistory history) {
         return new ItemHistoryDto(
-                history.getId(),
-                history.getItemId(),
+                history.getPublicId(),
+                history.getItemPublicId(),
                 history.getChangeType(),
                 history.getActorSubject(),
                 history.getActorName(),

@@ -323,8 +323,9 @@ export class AdminComponent implements OnInit {
   /** True while the GET that populates the edit list is in flight. */
   readonly loadingItems = signal<boolean>(false);
 
-  /** The id of the item currently being edited, or null when no edit is active. */
-  readonly editingId = signal<number | null>(null);
+  /** The id of the item currently being edited, or null when no edit is active.
+   *  This is the item's opaque public id (UUID string), used as the PUT target. */
+  readonly editingId = signal<string | null>(null);
 
   /** Bound to the edit form's "name" input (required, backend `@NotBlank`). */
   readonly editName = signal<string>('');
@@ -346,9 +347,10 @@ export class AdminComponent implements OnInit {
 
   /**
    * The id of the item currently being deleted, or null when no delete is in
-   * flight. Used to disable and relabel the specific row's Delete button.
+   * flight. This is the item's opaque public id (UUID string). Used to disable
+   * and relabel the specific row's Delete button.
    */
-  readonly deletingId = signal<number | null>(null);
+  readonly deletingId = signal<string | null>(null);
 
   // ── Convenience read-throughs to the session store (for the template) ─────
 

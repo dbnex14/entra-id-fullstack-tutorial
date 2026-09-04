@@ -1,6 +1,9 @@
 package com.example.entraoauth.item;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
+
+import com.github.f4b6a3.uuid.UuidCreator;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,6 +15,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 /**
@@ -71,9 +75,9 @@ public class ItemHistory {
     public enum ChangeType {
         /** A new item was created ({@code POST /entra-backend/items}). */
         CREATE,
-        /** An existing item's fields were updated ({@code PUT /entra-backend/items/{id}}). */
+        /** An existing item's fields were updated ({@code PUT /entra-backend/items/{publicId}}). */
         UPDATE,
-        /** An item was deleted ({@code DELETE /entra-backend/items/{id}}). */
+        /** An item was deleted ({@code DELETE /entra-backend/items/{publicId}}). */
         DELETE
     }
 
@@ -85,6 +89,18 @@ public class ItemHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    /**
+     * Opaque, non-sequential PUBLIC identifier for this history row. Maps to
+     * {@code public_id UUID NOT NULL UNIQUE} (added by {@code V3__public_ids.sql}).
+     *
+     * <p>Same rationale as {@link Item#getPublicId()}: the numeric {@link #id} stays the internal
+     * {@code BIGSERIAL} primary key, while this time-ordered <strong>UUIDv7</strong> is what the API
+     * exposes ({@code ItemHistoryDto.id}) so the sequential id never crosses the wire. Generated
+     * in-application in {@link #onCreate()} (PG 17 has no native {@code uuidv7()}).
+     */
+    @Column(name = "public_id", nullable = false, unique = true, updatable = false)
+    private UUID publicId;
 
     /**
      * The item this change concerned. Maps the {@code item_id} foreign key via a lazy, optional
@@ -170,6 +186,27 @@ public class ItemHistory {
         this.id = id;
     }
 
+    /**
+     * JPA lifecycle callback that assigns the opaque {@link #publicId} (a time-ordered UUIDv7)
+     * immediately before this row is first inserted, unless one was already set. See
+     * {@link Item#onCreate()} for the shared rationale.
+     */
+    @PrePersist
+    void onCreate() {
+        if (this.publicId == null) {
+            this.publicId = UuidCreator.getTimeOrderedEpoch();
+        }
+    }
+
+    /**
+     * The opaque public identifier exposed by the API in place of the internal {@link #id}.
+     *
+     * @return the row's UUIDv7 public id (never {@code null} once persisted)
+     */
+    public UUID getPublicId() {
+        return publicId;
+    }
+
     public Item getItem() {
         return item;
     }
@@ -188,6 +225,19 @@ public class ItemHistory {
      */
     public Long getItemId() {
         return item != null ? item.getId() : null;
+    }
+
+    /**
+     * Convenience accessor returning the associated item's <em>opaque public id</em>, or
+     * {@code null} if the item was deleted (the FK was set to null). This is what the API exposes to
+     * reference the parent item in a history record &mdash; the same {@code publicId} the client sees
+     * in the item list &mdash; so no internal numeric id is leaked. Reading through the lazy proxy
+     * uses the already-loaded association without forcing an extra query when the item is present.
+     *
+     * @return the parent item's UUID public id, or {@code null} if the item no longer exists
+     */
+    public UUID getItemPublicId() {
+        return item != null ? item.getPublicId() : null;
     }
 
     public ChangeType getChangeType() {

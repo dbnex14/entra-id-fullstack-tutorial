@@ -1,6 +1,7 @@
 package com.example.entraoauth.item;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -105,21 +106,22 @@ class ItemController {
      *
      * <p>{@code @PreAuthorize("hasAnyRole('Viewer','Admin')")} mirrors the item read rule (R8.1):
      * history is observational data, so both Viewer and Admin may read it &mdash; even though only
-     * Admin can <em>generate</em> it (only Admin can write items). The {@code {id}} path segment is
-     * bound to {@code long id} via {@code @PathVariable}.
+     * Admin can <em>generate</em> it (only Admin can write items). The {@code {publicId}} path segment
+     * is bound to a {@link UUID} via {@code @PathVariable} (Spring converts the string automatically;
+     * a malformed UUID yields a 400 before this runs).
      *
      * <p>This returns HTTP 200 with the (possibly empty) list of {@link ItemHistoryDto}. It
      * deliberately does <em>not</em> 404 for an unknown/since-deleted id: history is allowed to
      * outlive its item, so a caller polling a deleted id gets a clean empty list rather than an error
      * (a deleted item's rows have a null {@code item_id} and appear only in the global log).
      *
-     * @param id the id of the item whose history is requested (from the path)
+     * @param publicId the opaque public id of the item whose history is requested (from the path)
      * @return that item's history as DTOs, newest first (HTTP 200)
      */
-    @GetMapping("/{id}/history")
+    @GetMapping("/{publicId}/history")
     @PreAuthorize("hasAnyRole('Viewer','Admin')")
-    List<ItemHistoryDto> history(@PathVariable long id) {
-        return service.findHistoryForItem(id);
+    List<ItemHistoryDto> history(@PathVariable UUID publicId) {
+        return service.findHistoryForItem(publicId);
     }
 
     /**
@@ -150,21 +152,21 @@ class ItemController {
      *
      * <p>{@code @PreAuthorize("hasRole('Admin')")} again limits mutation to {@code ROLE_Admin}
      * (R8.2, R8.3); a non-Admin authenticated caller receives 403 with no change to the row. The
-     * {@code {id}} path segment is bound to the {@code long id} parameter via {@code @PathVariable},
-     * and the JSON body is bound and validated into an {@link UpdateItemRequest} by {@code @Valid}
-     * (its {@code @NotBlank name} guards against clearing the name).
+     * {@code {publicId}} path segment is bound to the {@code UUID publicId} parameter via
+     * {@code @PathVariable}, and the JSON body is bound and validated into an {@link UpdateItemRequest}
+     * by {@code @Valid} (its {@code @NotBlank name} guards against clearing the name).
      *
      * <p>On success the service applies the change and refreshes {@code updated_at}; returning the
      * updated {@link ItemDto} directly yields HTTP 200 with the DTO body.
      *
-     * @param id      the identifier of the item to update (from the path)
-     * @param request the validated update request (JSON body)
+     * @param publicId the opaque public id of the item to update (from the path)
+     * @param request  the validated update request (JSON body)
      * @return the updated item as a DTO (HTTP 200)
      */
-    @PutMapping("/{id}")
+    @PutMapping("/{publicId}")
     @PreAuthorize("hasRole('Admin')")
-    ItemDto update(@PathVariable long id, @Valid @RequestBody UpdateItemRequest request) {
-        return service.update(id, request);
+    ItemDto update(@PathVariable UUID publicId, @Valid @RequestBody UpdateItemRequest request) {
+        return service.update(publicId, request);
     }
 
     /**
@@ -172,22 +174,22 @@ class ItemController {
      *
      * <p>{@code @PreAuthorize("hasRole('Admin')")} limits deletion to {@code ROLE_Admin} (R8.2,
      * R8.3); a non-Admin authenticated caller receives 403 with no row removed, because method
-     * security stops the request before this body runs. The {@code {id}} path segment is bound to
-     * the {@code long id} parameter via {@code @PathVariable}.
+     * security stops the request before this body runs. The {@code {publicId}} path segment is bound
+     * to the {@code UUID publicId} parameter via {@code @PathVariable}.
      *
      * <p>On success the service removes the row and this handler returns HTTP <strong>204 No
      * Content</strong> &mdash; the conventional response for a successful delete that carries no
-     * body. If no item exists for {@code id}, the service throws a 404, which Spring maps to an HTTP
+     * body. If no item exists for {@code publicId}, the service throws a 404, which Spring maps to an HTTP
      * 404 response. The allowed {@code DELETE} method is already advertised by the CORS policy
      * (see {@code JwtConfig.corsConfigurationSource}), so the browser preflight succeeds.
      *
-     * @param id the identifier of the item to delete (from the path)
+     * @param publicId the opaque public id of the item to delete (from the path)
      * @return HTTP 204 No Content on success
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{publicId}")
     @PreAuthorize("hasRole('Admin')")
-    ResponseEntity<Void> delete(@PathVariable long id) {
-        service.delete(id);
+    ResponseEntity<Void> delete(@PathVariable UUID publicId) {
+        service.delete(publicId);
         return ResponseEntity.noContent().build();
     }
 }

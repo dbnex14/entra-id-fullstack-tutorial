@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
  * <p><strong>Why a separate controller instead of a method on {@link ItemController}.</strong>
  * {@link ItemController} is mapped at the class level with {@code @RequestMapping("/items")}, so every
  * handler it declares is prefixed with {@code /items} (that is why the per-item history lives at
- * {@code /items/{id}/history}). The feature's global change log is specified at the top-level path
+ * {@code /items/{publicId}/history}). The feature's global change log is specified at the top-level path
  * {@code /entra-backend/history}, which cannot be produced from under the {@code /items} prefix. A
  * small dedicated controller mapped at {@code /history} yields exactly that path while keeping each
  * controller's routing focused and easy to read.

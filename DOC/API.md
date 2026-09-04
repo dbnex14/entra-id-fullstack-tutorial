@@ -33,7 +33,7 @@ Response body (array of `ItemDto`):
 ```json
 [
   {
-    "id": 1,
+    "id": "018f7b3c-9a2e-7c41-b7f4-2a1d9c4e5f60",
     "name": "Sample item",
     "description": "An example item",
     "category": "hardware",
@@ -41,6 +41,10 @@ Response body (array of `ItemDto`):
   }
 ]
 ```
+
+> The `id` is the item's opaque **public identifier** (a UUIDv7), not the internal
+> sequential database key. Treat it as an opaque string: use it in URLs, do not
+> parse or infer meaning from it.
 
 Example:
 
@@ -78,36 +82,36 @@ curl -i -X POST http://localhost:8080/entra-backend/items \
   -d '{"name":"New item","description":"Optional text"}'
 ```
 
-### PUT /entra-backend/items/{id}
+### PUT /entra-backend/items/{publicId}
 
 Update an existing item.
 
 - **Required role:** `Admin` (`hasRole('Admin')`).
-- **Path variable:** `id` - the item id (long).
+- **Path variable:** `publicId` - the item's opaque public id (UUID).
 - **Request body:** `UpdateItemRequest` - `name` is required (non-blank);
   `description` and `category` optional.
 - **Success:** `200 OK` with the updated `ItemDto`.
-- **Not found:** `404 Not Found` if no item exists for `id`.
+- **Not found:** `404 Not Found` if no item exists for `publicId`.
 - Updating refreshes `updated_at`; the original `createdBy`/`created_at`
   (provenance) are not changed. Records an `UPDATE` change-history entry.
 
 Example:
 
 ```bash
-curl -i -X PUT http://localhost:8080/entra-backend/items/1 \
+curl -i -X PUT http://localhost:8080/entra-backend/items/018f7b3c-9a2e-7c41-b7f4-2a1d9c4e5f60 \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"Renamed","description":"Updated text"}'
 ```
 
-### DELETE /entra-backend/items/{id}
+### DELETE /entra-backend/items/{publicId}
 
 Delete an existing item.
 
 - **Required role:** `Admin` (`hasRole('Admin')`).
-- **Path variable:** `id` - the item id (long).
+- **Path variable:** `publicId` - the item's opaque public id (UUID).
 - **Success:** `204 No Content` (empty body).
-- **Not found:** `404 Not Found` if no item exists for `id`.
+- **Not found:** `404 Not Found` if no item exists for `publicId`.
 - The delete is a hard delete of the `item` row. The corresponding
   `access_audit` record of the request is written independently, so the fact that
   an Admin issued the delete remains traceable. A `DELETE` change-history entry is
@@ -118,16 +122,16 @@ Delete an existing item.
 Example:
 
 ```bash
-curl -i -X DELETE http://localhost:8080/entra-backend/items/1 \
+curl -i -X DELETE http://localhost:8080/entra-backend/items/018f7b3c-9a2e-7c41-b7f4-2a1d9c4e5f60 \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-### GET /entra-backend/items/{id}/history
+### GET /entra-backend/items/{publicId}/history
 
 List the change history for a single item, newest first.
 
 - **Required role:** `Viewer` or `Admin` (`hasAnyRole('Viewer','Admin')`).
-- **Path variable:** `id` - the item id (long).
+- **Path variable:** `publicId` - the item's opaque public id (UUID).
 - **Success:** `200 OK` with a JSON array of `ItemHistoryDto` (empty array if the
   item has no recorded history, or the id is unknown/since-deleted - this endpoint
   does **not** 404, because history may outlive its item).
@@ -137,21 +141,25 @@ Response body (array of `ItemHistoryDto`):
 ```json
 [
   {
-    "id": 12,
-    "itemId": 1,
+    "id": "018f7b3c-9a2e-7c41-b7f4-2a1d9c4e5f61",
+    "itemId": "018f7b3c-9a2e-7c41-b7f4-2a1d9c4e5f60",
     "changeType": "UPDATE",
     "actorSubject": "00000000-0000-0000-0000-000000000000",
     "actorName": "Ada Admin",
-    "details": "Updated item #1: name 'Widget' -> 'Gadget', category 'null' -> 'hardware'",
+    "details": "Updated item 018f7b3c-9a2e-7c41-b7f4-2a1d9c4e5f60: name 'Widget' -> 'Gadget', category 'null' -> 'hardware'",
     "changedAt": "2026-01-15T10:22:31.512Z"
   }
 ]
 ```
 
+> Both `id` and `itemId` are opaque public identifiers (UUIDs). `itemId` is the
+> parent item's public id - the same value returned by the item list - and is
+> `null` if that item was later deleted.
+
 Example:
 
 ```bash
-curl -i http://localhost:8080/entra-backend/items/1/history \
+curl -i http://localhost:8080/entra-backend/items/018f7b3c-9a2e-7c41-b7f4-2a1d9c4e5f60/history \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -201,9 +209,10 @@ Minimal (description is optional):
 }
 ```
 
-### PUT /entra-backend/items/{id} (update) - body
+### PUT /entra-backend/items/{publicId} (update) - body
 
-Put the item id in the URL path (e.g. `.../items/1`); the body has the same shape
+Put the item's opaque public id in the URL path (e.g.
+`.../items/018f7b3c-9a2e-7c41-b7f4-2a1d9c4e5f60`); the body has the same shape
 as create (`name` required, `description` optional):
 
 ```json
@@ -213,10 +222,10 @@ as create (`name` required, `description` optional):
 }
 ```
 
-### DELETE /entra-backend/items/{id}
+### DELETE /entra-backend/items/{publicId}
 
-No body. Set the id in the URL path and send the Bearer token; a successful
-delete returns `204 No Content`.
+No body. Set the item's opaque public id in the URL path and send the Bearer
+token; a successful delete returns `204 No Content`.
 
 Notes for Postman:
 - A blank/whitespace-only `name` on POST/PUT returns `400 Bad Request`.
@@ -230,7 +239,7 @@ Notes for Postman:
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `id` | number | Database-assigned identifier |
+| `id` | string (UUID) | Opaque public identifier (UUIDv7); not the internal numeric key |
 | `name` | string | Item name |
 | `description` | string \| null | Optional description |
 | `category` | string \| null | Optional short label (e.g. hardware/software/service) |
@@ -248,8 +257,8 @@ Notes for Postman:
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `id` | number | Database-assigned identifier of the history row |
-| `itemId` | number \| null | The changed item's id; `null` if that item was later deleted |
+| `id` | string (UUID) | Opaque public identifier of the history row |
+| `itemId` | string (UUID) \| null | The changed item's opaque public id; `null` if that item was later deleted |
 | `changeType` | string | One of `CREATE`, `UPDATE`, `DELETE` |
 | `actorSubject` | string | Token subject (oid/sub) of the acting identity |
 | `actorName` | string \| null | Acting identity's display name (`name` claim) if present |
@@ -260,7 +269,7 @@ Notes for Postman:
 
 The authorization behavior across identities and endpoints:
 
-| Identity | GET /items | POST /items | PUT /items/{id} | DELETE /items/{id} | GET /items/{id}/history | GET /history |
+| Identity | GET /items | POST /items | PUT /items/{publicId} | DELETE /items/{publicId} | GET /items/{publicId}/history | GET /history |
 | --- | --- | --- | --- | --- | --- | --- |
 | Anonymous (no token) | 401 | 401 | 401 | 401 | 401 | 401 |
 | Invalid/expired token | 401 | 401 | 401 | 401 | 401 | 401 |
@@ -274,7 +283,7 @@ Notes:
 - 403 is produced by method security before the controller body; no mutation
   occurs on a forbidden write or delete.
 - 400 is returned for a blank `name` on POST/PUT (bean validation).
-- 404 is returned by PUT/DELETE when no item exists for the given `id`.
+- 404 is returned by PUT/DELETE when no item exists for the given `publicId`.
 
 ## CORS
 
@@ -480,7 +489,7 @@ user is enough (GET only).
   role. Sign in as an Admin user (a Viewer token can only GET).
 
 For inspecting the token at jwt.io/jwt.ms and observing the background refresh,
-see `entra-backend/VERIFICATION.md`.
+see `GUIDE/TOKEN-VERIFICATION-GUIDE.md`.
 
 ## Keeping this document in sync
 

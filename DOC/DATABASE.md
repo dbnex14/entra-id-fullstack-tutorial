@@ -18,8 +18,35 @@ reproducible ("schema is code") and prevents drift.
 
 Migration file naming follows `V<version>__<description>.sql`. The initial
 migration is `V1__initial_schema.sql`; `V2__item_category_and_history.sql` adds
-the `category` column and the `item_history` table (a forward-only change - V1 is
-never edited).
+the `category` column and the `item_history` table; `V3__public_ids.sql` adds an
+opaque `public_id` (UUID) to `item` and `item_history`. Each is a forward-only
+change - earlier migrations are never edited (editing an applied migration changes
+its checksum and halts startup).
+
+## Public identifiers vs. internal primary keys
+
+Each row has two identifiers, and the distinction is deliberate:
+
+- **`id` (BIGSERIAL)** - the fast, sequential **internal** primary key. Used for
+  primary keys and foreign keys inside the database. It is **never exposed over
+  the API**.
+- **`public_id` (UUID)** - an opaque, non-sequential **public** identifier
+  (added by `V3`). This is what the REST API exposes in JSON bodies and in
+  `/items/{publicId}` URLs, so the internal sequence is never revealed. A
+  sequential id on the wire would leak row counts/ordering and let a client
+  enumerate ids; the opaque `public_id` removes that.
+
+This is **defence in depth**, not the primary access control: authorization is
+still the claim-driven `@PreAuthorize` role checks. An opaque id is never a
+substitute for an authorization decision. Only tables whose id crosses the wire
+carry a `public_id` (`item`, `item_history`); the internal `app_user` and
+`access_audit` tables do not, because neither exposes its id over the API.
+
+The `public_id` is a **UUIDv7** (RFC 9562, time-ordered) minted by the
+application (`com.github.f4b6a3:uuid-creator`) in a JPA `@PrePersist` hook, not by
+the database - PostgreSQL's native `uuidv7()` only exists from PG 18 and this
+project targets PG 17. UUIDv7 is time-ordered, so as an indexed key it keeps good
+insert locality (unlike random UUIDv4).
 
 ## Tables
 
@@ -30,7 +57,8 @@ may read; Admin may write.
 
 | Column | Type | Constraints | Notes |
 | --- | --- | --- | --- |
-| `id` | BIGSERIAL | PRIMARY KEY | DB-generated identity |
+| `id` | BIGSERIAL | PRIMARY KEY | Internal DB-generated identity; **never exposed over the API** |
+| `public_id` | UUID | NOT NULL, UNIQUE (`uq_item_public_id`) | Opaque public identifier (UUIDv7) exposed by the API as the item's `id`; added in `V3` |
 | `name` | VARCHAR(200) | NOT NULL | Item name |
 | `description` | TEXT | nullable | Optional description |
 | `category` | VARCHAR(100) | nullable | Optional short label (hardware/software/service); added in `V2` |
@@ -51,8 +79,9 @@ Admin can write items).
 
 | Column | Type | Constraints | Notes |
 | --- | --- | --- | --- |
-| `id` | BIGSERIAL | PRIMARY KEY | DB-generated identity |
-| `item_id` | BIGINT | FK -> `item(id)`, nullable, `ON DELETE SET NULL` | The changed item; becomes `null` after that item is deleted so the record survives |
+| `id` | BIGSERIAL | PRIMARY KEY | Internal DB-generated identity; **never exposed over the API** |
+| `public_id` | UUID | NOT NULL, UNIQUE (`uq_item_history_public_id`) | Opaque public identifier (UUIDv7) exposed by the API as the history row's `id`; added in `V3` |
+| `item_id` | BIGINT | FK -> `item(id)`, nullable, `ON DELETE SET NULL` | The changed item; becomes `null` after that item is deleted so the record survives. Internal FK; the API exposes the parent item's `public_id`, not this value |
 | `change_type` | VARCHAR(20) | NOT NULL, CHECK in (CREATE, UPDATE, DELETE) | Kind of change |
 | `actor_subject` | VARCHAR(100) | NOT NULL | **Token subject (oid/sub)** of the actor; identity/provenance, not authorization |
 | `actor_name` | VARCHAR(200) | nullable | Actor's display name (`name` claim) if present |
@@ -60,7 +89,8 @@ Admin can write items).
 | `changed_at` | TIMESTAMPTZ | NOT NULL DEFAULT now() | When the change happened |
 
 Index: `idx_item_history_item_id` on `item_history(item_id)` - speeds the
-"history for this item" lookup (`GET /entra-backend/items/{id}/history`).
+"history for this item" lookup (`GET /entra-backend/items/{publicId}/history`,
+which resolves the public id to the internal `item_id` for the query).
 PostgreSQL does not auto-index foreign-key columns, so this index is added
 explicitly.
 
@@ -120,6 +150,10 @@ applied, their checksums, and success/failure. Do not edit by hand.
 
 - `BIGSERIAL` maps to a `Long` id with `GenerationType.IDENTITY` (the database
   assigns the value on insert).
+- `UUID` (the `public_id` columns) maps to a `java.util.UUID` field. The value is
+  a UUIDv7 assigned by the application in a JPA `@PrePersist` hook via
+  `UuidCreator.getTimeOrderedEpoch()` (not by the database), so it is portable to
+  PostgreSQL 17 which has no native `uuidv7()`.
 - `TIMESTAMPTZ` (timestamp with time zone) maps to `java.time.OffsetDateTime`,
   which preserves the UTC offset. The JPA entities use `OffsetDateTime`
   accordingly.

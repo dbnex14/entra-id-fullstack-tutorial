@@ -39,7 +39,10 @@ A layered Spring Boot resource server:
   - `AccessAuditFilter` records each request's outcome (audit only).
 - **Domain layer** (`item/`)
   - `Item` (JPA entity), `ItemDto`, `CreateItemRequest`, `UpdateItemRequest` -
-    all carry an optional `category` label.
+    all carry an optional `category` label. Each entity keeps a sequential
+    `BIGINT` primary key (`id`) **internally** and exposes an opaque
+    `UUID publicId` over the API (see the "Opaque public identifiers" decision
+    below).
   - `ItemHistory` (JPA entity with a lazy, nullable `@ManyToOne` to `Item`),
     `ItemHistoryDto`, and `ItemHistory.ChangeType` (CREATE/UPDATE/DELETE) - the
     item change log.
@@ -48,7 +51,7 @@ A layered Spring Boot resource server:
     entry on each create/update/delete capturing the acting identity),
     `ItemController` (role-protected REST endpoints: GET read for Viewer/Admin;
     POST/PUT/DELETE for Admin, DELETE returning 204; plus GET
-    `/items/{id}/history` for Viewer/Admin), and `HistoryController` (GET
+    `/items/{publicId}/history` for Viewer/Admin), and `HistoryController` (GET
     `/history` global change log for Viewer/Admin).
 - **Audit layer** (`audit/`)
   - `AccessAudit` entity + `AccessAuditRepository`.
@@ -73,6 +76,10 @@ to validate tokens.
 ## Frontend architecture (EntraUi)
 
 An Angular 19 standalone SPA (no NgModules; `inject()` DI and signals throughout):
+
+> For a file-by-file reference of every frontend component (shell, `auth/`
+> infrastructure, and the home/login/dashboard/admin feature components), see
+> `DOC/PROJECT-STRUCTURE.md`.
 
 - **Auth infrastructure** (`app/auth/`)
   - `msal.config.ts` - identity constants and MSAL instance/guard/interceptor
@@ -158,6 +165,16 @@ trigger interactive login.
   a security boundary; the server independently enforces `hasRole('Admin')`.
 - **Audit is observation, not enforcement.** `AccessAuditFilter` records outcomes
   after the fact; it never makes an authorization decision.
+- **Opaque public identifiers over the wire.** Rows keep a fast sequential
+  `BIGINT` primary key internally, but the API exposes an opaque, time-ordered
+  `UUIDv7` `public_id` instead (in JSON and in `/items/{publicId}` URLs). This
+  keeps the internal sequence off the wire, so clients cannot infer row
+  counts/ordering or enumerate ids. It is defence in depth, not the primary
+  control - authorization remains the claim-driven role checks; an opaque id is
+  never a substitute for an authorization decision. Only tables whose id is
+  exposed (`item`, `item_history`) carry a `public_id`; the internal `app_user`
+  and `access_audit` tables do not. The UUIDv7 is generated in-application
+  (PostgreSQL 17 has no native `uuidv7()`).
 
 ## Correctness properties (validated by tests)
 

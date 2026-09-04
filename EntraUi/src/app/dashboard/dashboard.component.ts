@@ -53,16 +53,19 @@ const API_BASE_URL = 'http://localhost:8080';
 /**
  * Client-side view of the backend `ItemDto` record. The Java side is:
  *
- *     record ItemDto(Long id, String name, String description, String category, String createdBy) {}
+ *     record ItemDto(UUID id, String name, String description, String category, String createdBy) {}
  *
- * so the JSON shape is `{ id, name, description, category, createdBy }`. `description`
- * and `category` are marked optional here because both columns are nullable in the
- * schema (the backend may serialize them as `null`/absent). `createdBy` holds the
- * token subject (oid/sub) that the backend persisted from the validated JWT — this
- * is how a rendered row ties back to the identity that created it.
+ * so the JSON shape is `{ id, name, description, category, createdBy }`. The `id` is the item's
+ * OPAQUE public identifier (a UUIDv7 string), NOT the internal sequential database key — the backend
+ * deliberately exposes the opaque id so the row sequence is never revealed to clients. Treat it as an
+ * opaque string: use it in URLs and as a list-tracking key, but never parse or reason about its
+ * value. `description` and `category` are optional because both columns are nullable (the backend may
+ * serialize them as `null`/absent). `createdBy` holds the token subject (oid/sub) that the backend
+ * persisted from the validated JWT — this is how a rendered row ties back to the identity that
+ * created it.
  */
 export interface ItemDto {
-  id: number;
+  id: string;
   name: string;
   description?: string;
   category?: string;
@@ -72,13 +75,16 @@ export interface ItemDto {
 /**
  * Client-side view of the backend `ItemHistoryDto` record. The Java side is:
  *
- *     record ItemHistoryDto(Long id, Long itemId, ChangeType changeType,
+ *     record ItemHistoryDto(UUID id, UUID itemId, ChangeType changeType,
  *                           String actorSubject, String actorName,
  *                           String details, OffsetDateTime changedAt) {}
  *
  * so the JSON shape is `{ id, itemId, changeType, actorSubject, actorName, details, changedAt }`.
  *
- * This is a READ-ONLY audit projection. Note the identity fields:
+ * This is a READ-ONLY audit projection. Both `id` and `itemId` are OPAQUE public identifiers
+ * (UUIDv7 strings), never the internal sequential keys: `id` is this history row's public id and
+ * `itemId` is the parent item's public id (the same value the item list exposes), so they line up.
+ * Note the identity fields:
  *   - `actorSubject` is the token subject (oid/sub) of whoever made the change,
  *   - `actorName` is that caller's display name (`name` claim), which may be absent.
  * Both are captured by the backend from the *validated* JWT — never from client
@@ -88,8 +94,8 @@ export interface ItemDto {
  * `changedAt` is an ISO-8601 timestamp string with offset (Java `OffsetDateTime`).
  */
 export interface ItemHistoryDto {
-  id: number;
-  itemId: number | null;
+  id: string;
+  itemId: string | null;
   changeType: 'CREATE' | 'UPDATE' | 'DELETE';
   actorSubject: string;
   actorName?: string;

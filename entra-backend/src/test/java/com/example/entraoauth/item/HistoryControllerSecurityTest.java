@@ -72,7 +72,7 @@ class HistoryControllerSecurityTest {
         // An authorized GET returns this list and yields 200. The 401 path never reaches this stub.
         when(itemService.findHistory())
                 .thenReturn(List.of(new ItemHistoryDto(
-                        1L, 1L, ItemHistory.ChangeType.CREATE,
+                        java.util.UUID.randomUUID(), java.util.UUID.randomUUID(), ItemHistory.ChangeType.CREATE,
                         "subject-oid", "Ada Admin", "Created item 'existing'",
                         OffsetDateTime.parse("2026-01-15T10:22:31.512Z"))));
     }

@@ -1,8 +1,10 @@
-# Verification Guide — Entra ID OAuth Full-Stack Reference
+# Token Verification Guide — Entra ID OAuth Full-Stack Reference
 
 This guide walks through the manual, instructional verification procedures for the
 Entra ID OAuth full-stack sample. The goal is to let you *observe* the identity
-payload and refresh machinery directly:
+payload and refresh machinery directly — i.e. to **verify the token/identity flow**
+end to end (its claims, the background refresh cycle, and the server-side
+`ROLE_*` authorities it produces):
 
 1. **Manual claim inspection with jwt.io** — decode an Access Token and confirm its claims.
 2. **Browser Network-tab observation of the background refresh cycle** — watch the silent

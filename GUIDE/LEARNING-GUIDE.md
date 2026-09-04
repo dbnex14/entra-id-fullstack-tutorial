@@ -9,7 +9,7 @@ all.
 
 You do not need to run anything to learn from this path — reading the files in
 order is enough. When you *do* want to see it working, the final stop
-(`entra-backend/VERIFICATION.md`) tells you how.
+(`GUIDE/TOKEN-VERIFICATION-GUIDE.md`) tells you how.
 
 > **Related documentation:** the repository `README.md` is the overview and
 > entry point; the `DOC/` folder holds reference docs (ARCHITECTURE, API,
@@ -395,7 +395,7 @@ async testing techniques (fakeAsync, HttpTestingController).
 
 ### Stage 8 — Run it and observe (make the theory concrete)
 
-38. **File:** `entra-backend/VERIFICATION.md`
+38. **File:** `GUIDE/TOKEN-VERIFICATION-GUIDE.md`
     **Read for:** how to run the stack and *see* everything you just read.
     **Look for:** the three manual procedures — **jwt.io claim inspection**
     (see the `roles`/`aud`/`iss`/`exp` claims), **Network-tab refresh
@@ -412,7 +412,7 @@ async testing techniques (fakeAsync, HttpTestingController).
 Read: design.md -> application.yml -> AudienceValidator -> RolesClaimConverter ->
 JwtConfig -> SecurityConfig -> ItemController -> msal.config.ts ->
 token-refresh.service.ts -> auth-token.interceptor.ts -> login.component.ts ->
-VERIFICATION.md. This gives you the complete request/token story end to end.
+TOKEN-VERIFICATION-GUIDE.md. This gives you the complete request/token story end to end.
 
 **Complete path (~3-4 hours): every file, in the order above (Stages 0-8).**
 Recommended if you want to genuinely learn all the covered subjects, including
