@@ -1,0 +1,72 @@
+# Ordered reading path for the Entra ID OAuth2 full-stack reference.
+# One file path per line, relative to the repository root, in the order the
+# LEARNING-GUIDE.md reading path recommends. Blank lines and lines starting
+# with '#' are ignored by the "read it like a book" commands in LEARNING-GUIDE.md.
+
+# Stage 0 - design (concepts first)
+.kiro/specs/entra-oauth-fullstack/requirements.md
+.kiro/specs/entra-oauth-fullstack/design.md
+
+# Stage 1 - backend foundation
+entra-backend/pom.xml
+entra-backend/src/main/java/com/example/entraoauth/EntraOauthApplication.java
+entra-backend/src/main/resources/application.yml
+entra-backend/src/main/resources/db/migration/V1__initial_schema.sql
+entra-backend/src/main/resources/db/migration/V2__item_category_and_history.sql
+entra-backend/src/main/resources/db/migration/V3__public_ids.sql
+
+# Stage 2 - token validation pipeline
+entra-backend/src/main/java/com/example/entraoauth/security/AudienceValidator.java
+entra-backend/src/main/java/com/example/entraoauth/security/RolesClaimConverter.java
+entra-backend/src/main/java/com/example/entraoauth/security/JwtConfig.java
+entra-backend/src/main/java/com/example/entraoauth/security/SecurityConfig.java
+
+# Stage 3 - domain and endpoints
+entra-backend/src/main/java/com/example/entraoauth/item/Item.java
+entra-backend/src/main/java/com/example/entraoauth/item/ItemHistory.java
+entra-backend/src/main/java/com/example/entraoauth/item/ItemDto.java
+entra-backend/src/main/java/com/example/entraoauth/item/ItemHistoryDto.java
+entra-backend/src/main/java/com/example/entraoauth/item/CreateItemRequest.java
+entra-backend/src/main/java/com/example/entraoauth/item/UpdateItemRequest.java
+entra-backend/src/main/java/com/example/entraoauth/item/ItemRepository.java
+entra-backend/src/main/java/com/example/entraoauth/item/ItemHistoryRepository.java
+entra-backend/src/main/java/com/example/entraoauth/item/ItemService.java
+entra-backend/src/main/java/com/example/entraoauth/item/ItemController.java
+entra-backend/src/main/java/com/example/entraoauth/item/HistoryController.java
+
+# Stage 4 - backend tests
+entra-backend/src/test/java/com/example/entraoauth/security/RolesClaimConverterPropertyTest.java
+entra-backend/src/test/java/com/example/entraoauth/security/InvalidTokenRejectionPropertyTest.java
+entra-backend/src/test/java/com/example/entraoauth/security/CorsPropertyTest.java
+entra-backend/src/test/java/com/example/entraoauth/item/WriteAuthorizationPropertyTest.java
+entra-backend/src/test/java/com/example/entraoauth/item/ItemControllerSecurityTest.java
+entra-backend/src/test/java/com/example/entraoauth/item/HistoryControllerSecurityTest.java
+entra-backend/src/test/java/com/example/entraoauth/item/ItemServiceHistoryTest.java
+
+# Stage 5 - frontend auth infrastructure
+EntraUi/src/main.ts
+EntraUi/src/app/auth/msal.config.ts
+EntraUi/src/app/auth/auth-session.store.ts
+EntraUi/src/app/auth/token-refresh.service.ts
+EntraUi/src/app/auth/auth-token.interceptor.ts
+EntraUi/src/app/auth/auth.guard.ts
+
+# Stage 6 - frontend components, wiring, and backend audit
+EntraUi/src/app/home/home.component.ts
+EntraUi/src/app/login/login.component.ts
+EntraUi/src/app/dashboard/dashboard.component.ts
+EntraUi/src/app/admin/admin.component.ts
+EntraUi/src/app/app.routes.ts
+EntraUi/src/app/app.config.ts
+EntraUi/src/app/app.component.ts
+entra-backend/src/main/java/com/example/entraoauth/audit/AccessAudit.java
+entra-backend/src/main/java/com/example/entraoauth/audit/AccessAuditRepository.java
+entra-backend/src/main/java/com/example/entraoauth/security/AccessAuditFilter.java
+
+# Stage 7 - frontend tests
+EntraUi/src/app/auth/token-refresh.service.spec.ts
+EntraUi/src/app/auth/token-refresh.retry.spec.ts
+EntraUi/src/app/auth/auth-token.interceptor.spec.ts
+
+# Stage 8 - run it and observe
+GUIDE/TOKEN-VERIFICATION-GUIDE.md

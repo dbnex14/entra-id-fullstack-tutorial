@@ -58,6 +58,73 @@ Legend for each entry:
 
 ---
 
+## Print it and read it like a book
+
+If you prefer to read on paper (or a tablet) away from the editor, you can turn
+this reading path into a single ordered "book" and print it. The exact ordered
+list of files is the **File Manifest** at the end of this guide, and this repo
+ships that same list as a plain text file — `GUIDE/reading-order.txt` (one file
+path per line, in reading order; blank lines and `#` comments are ignored). The
+commands below consume it.
+
+Run them from the repository root (`entra-id-fullstack-tutorial/`).
+
+**Option A — one concatenated "book" file (recommended for printing).**
+Produces `learning-book.txt` with a labelled banner before each file, in order,
+so it reads front-to-back like chapters.
+
+macOS / Linux (bash):
+
+```bash
+: > learning-book.txt
+while IFS= read -r f; do
+  case "$f" in ''|\#*) continue;; esac        # skip blank lines and # comments
+  { printf '\n\n===== FILE: %s =====\n\n' "$f"; cat "$f"; } >> learning-book.txt
+done < GUIDE/reading-order.txt
+# Then open/print learning-book.txt (e.g. `lp learning-book.txt`, or open it and Print).
+```
+
+Windows (PowerShell):
+
+```powershell
+Remove-Item learning-book.txt -ErrorAction Ignore
+Get-Content GUIDE/reading-order.txt | Where-Object { $_ -and $_ -notmatch '^\s*#' } | ForEach-Object {
+  "`r`n`r`n===== FILE: $_ =====`r`n" | Add-Content learning-book.txt
+  Get-Content $_ | Add-Content learning-book.txt
+}
+# Then print: notepad learning-book.txt  (File > Print), or your editor's Print.
+```
+
+**Option B — print each file separately, in order** (a stack of per-file printouts):
+
+macOS / Linux:
+
+```bash
+while IFS= read -r f; do
+  case "$f" in ''|\#*) continue;; esac
+  lp "$f"        # or: enscript -p - "$f" | lp   for syntax-friendly output
+done < GUIDE/reading-order.txt
+```
+
+Windows (PowerShell):
+
+```powershell
+Get-Content GUIDE/reading-order.txt | Where-Object { $_ -and $_ -notmatch '^\s*#' } | ForEach-Object {
+  Start-Process -FilePath $_ -Verb Print       # prints via the file type's default handler
+}
+```
+
+Tips for the paper read:
+- Print with **line wrapping on** and a **monospace** font so long comment lines
+  are not clipped. For syntax highlighting on paper, `enscript`, `a2ps`, or
+  VS Code's Print work well.
+- Read the printouts in manifest order — it matches the stages below exactly, so
+  the concepts build on one another like chapters.
+- You do not need the running app to read; save `TOKEN-VERIFICATION-GUIDE.md`
+  (the last item) for when you are back at a machine and want to see it live.
+
+---
+
 ## Orientation — the mental model before you read code
 
 Three actors cooperate in this system:
@@ -143,6 +210,25 @@ schema is owned by migrations rather than the ORM.
    `app_user` / `access_audit` are **audit-only, never used for authorization**,
    and that `created_by` holds the token subject (oid/sub).
 
+4a. **File:** `entra-backend/src/main/resources/db/migration/V2__item_category_and_history.sql`
+   **Read for:** a **forward-only** schema change — adding the optional
+   `category` column and the `item_history` change-log table on top of V1.
+   **Look for:** the header explaining why migrations are **immutable** (editing
+   an applied one breaks its Flyway checksum), and the `item_history` foreign key
+   using **`ON DELETE SET NULL`** so a DELETE's history row survives the item's
+   removal.
+
+4b. **File:** `entra-backend/src/main/resources/db/migration/V3__public_ids.sql`
+   **Read for:** the industry-standard pattern of **not exposing sequential
+   primary keys over the API**. Adds an opaque `public_id` (UUIDv7) to `item` and
+   `item_history`.
+   **Look for:** the header's explanation of *why* (sequential ids leak row
+   counts/ordering and are enumerable) and the emphasis that this is **defence in
+   depth, not the primary control** — authorization stays claim-driven. Note it
+   touches only the tables whose id crosses the wire (not `app_user` /
+   `access_audit`), and that UUIDv7 is generated in the app because PG 17 has no
+   native `uuidv7()`.
+
 ---
 
 ### Stage 2 — Token validation pipeline (the security core)
@@ -188,12 +274,29 @@ Now that requests are authenticated and authorized, see the business surface.
 9. **File:** `entra-backend/src/main/java/com/example/entraoauth/item/Item.java`
    **Read for:** JPA entity mapping and why it must match the Flyway schema
    exactly under `ddl-auto: validate`.
-   **Look for:** the `@Column` mappings, `OffsetDateTime` for `TIMESTAMPTZ`, and
-   the comment that `created_by` is the token subject (provenance, not authz).
+   **Look for:** the `@Column` mappings, `OffsetDateTime` for `TIMESTAMPTZ`, the
+   comment that `created_by` is the token subject (provenance, not authz), and
+   the `publicId` (UUIDv7) field with its `@PrePersist` generator — the opaque id
+   exposed over the API instead of the internal sequential `id` (see V3, file 4b).
+
+9a. **File:** `entra-backend/src/main/java/com/example/entraoauth/item/ItemHistory.java`
+   **Read for:** the change-log entity and a JPA **`@ManyToOne`** association back
+   to `Item`.
+   **Look for:** the **lazy, optional** `@ManyToOne` (nullable FK so a DELETE's
+   record survives), `@Enumerated(EnumType.STRING)` for `change_type`, and the
+   `getItemPublicId()` helper used to expose the parent item's opaque id (not the
+   numeric FK).
 
 10. **File:** `entra-backend/src/main/java/com/example/entraoauth/item/ItemDto.java`
     **Read for:** why a DTO exists separately from the entity (wire shape vs
     persistence object).
+    **Look for:** the exposed `id` is the item's **opaque `publicId` (UUID)**, not
+    the internal numeric key — the wire never carries the sequential id.
+
+10a. **File:** `entra-backend/src/main/java/com/example/entraoauth/item/ItemHistoryDto.java`
+    **Read for:** the read-only projection of a history row.
+    **Look for:** both `id` and `itemId` are opaque UUIDs; `itemId` is the parent
+    item's public id (or `null` if the item was later deleted).
 
 11. **File:** `entra-backend/src/main/java/com/example/entraoauth/item/CreateItemRequest.java`
     **Read for:** validated input at the API boundary (`@NotBlank`) and why the
@@ -206,21 +309,36 @@ Now that requests are authenticated and authorized, see the business surface.
 13. **File:** `entra-backend/src/main/java/com/example/entraoauth/item/ItemRepository.java`
     **Read for:** Spring Data JPA basics and where the persistence layer sits.
     **Look for:** the comment on `count()` being the **no-mutation oracle** the
-    property test later uses.
+    property test later uses, and `findByPublicId(UUID)` — the API resolves the
+    opaque id to a row (never the internal numeric id).
+
+13a. **File:** `entra-backend/src/main/java/com/example/entraoauth/item/ItemHistoryRepository.java`
+    **Read for:** **derived query methods** — Spring Data generates the query from
+    the method name.
+    **Look for:** `findByItem_PublicIdOrderByChangedAtDesc(...)` (navigating the
+    association to the parent item's public id) and `findAllByOrderByChangedAtDesc()`
+    for the global log.
 
 14. **File:** `entra-backend/src/main/java/com/example/entraoauth/item/ItemService.java`
     **Read for:** how the authenticated subject flows from the JWT into persisted
-    rows.
+    rows, and how a **change-history row** is appended on every write.
     **Look for:** `SecurityContextHolder` reading the `Jwt` principal and
-    `jwt.getSubject()` -> `created_by` (never from the request body), plus
-    timestamp management.
+    `jwt.getSubject()` -> `created_by` (never from the request body), the
+    `recordHistory(...)` calls on create/update/delete, and how reads/writes
+    resolve items **by `publicId`**.
 
 15. **File:** `entra-backend/src/main/java/com/example/entraoauth/item/ItemController.java`
     **Read for:** the role-protected REST surface — the payoff of Stage 2.
     **Look for:** `@PreAuthorize("hasAnyRole('Viewer','Admin')")` on GET vs
-    `@PreAuthorize("hasRole('Admin')")` on writes, and the comment explaining how
-    401 (missing/invalid token) and 403 (missing authority, no mutation) each
-    arise **before** the method body runs.
+    `@PreAuthorize("hasRole('Admin')")` on writes, the `{publicId}` (UUID) path
+    variables, and the comment explaining how 401 (missing/invalid token) and 403
+    (missing authority, no mutation) each arise **before** the method body runs.
+
+15a. **File:** `entra-backend/src/main/java/com/example/entraoauth/item/HistoryController.java`
+    **Read for:** why the **global** change log lives in its own controller.
+    **Look for:** the class-doc note that `@RequestMapping("/items")` on
+    `ItemController` cannot produce the top-level `/history` path, so a small
+    dedicated controller maps it; same `hasAnyRole('Viewer','Admin')` posture.
 
 ---
 
@@ -260,6 +378,20 @@ converter test first (simplest), then the pipeline tests, then the slice test.
     **Look for:** the concrete status matrix — Viewer 200/403, Admin 200/201,
     anonymous 401 — and how `spring-security-test`'s `jwt().authorities(...)`
     injects a caller without minting a real token.
+
+20a. **File:** `entra-backend/src/test/java/com/example/entraoauth/item/HistoryControllerSecurityTest.java`
+    **Read for:** the same slice-test technique applied to the global
+    `/history` endpoint.
+    **Look for:** the Viewer/Admin-200 vs anonymous-401 assertions mirroring the
+    item reads (history is observational — both roles may read).
+
+20b. **File:** `entra-backend/src/test/java/com/example/entraoauth/item/ItemServiceHistoryTest.java`
+    **Read for:** a plain (non-Spring) **unit test** of the service's history
+    writing, using Mockito.
+    **Look for:** how a validated `Jwt` is placed in the `SecurityContextHolder`
+    and the saved `ItemHistory` is asserted to carry the **actor from the token**
+    (subject + `name` claim), never client input — and that a create/update/delete
+    each writes the right `ChangeType`.
 
 ---
 
@@ -318,7 +450,13 @@ See how the auth layer is consumed by real screens and how the whole SPA is
 assembled. Then loop back to the backend audit filter that makes authorization
 outcomes observable.
 
-27. **File:** `EntraUi/src/app/login/login.component.ts`
+27. **File:** `EntraUi/src/app/home/home.component.ts`
+    **Read for:** the **public** (unguarded) landing page and why it exists.
+    **Look for:** the header comment explaining that making the app root public is
+    what stops an unauthenticated visitor (or a just-logged-out user) from being
+    instantly bounced to Entra — sign-in is initiated from the header instead.
+
+27a. **File:** `EntraUi/src/app/login/login.component.ts`
     **Read for:** the login/redirect state machine.
     **Look for:** `handleRedirectPromise()` (state validation R1.9, error-param
     detection R1.10), `setSession(...)` on success, error handling that stays
@@ -328,14 +466,16 @@ outcomes observable.
 28. **File:** `EntraUi/src/app/dashboard/dashboard.component.ts`
     **Read for:** a read screen (`GET /entra-backend/items`) using signals; the interceptor
     attaches the token transparently.
-    **Look for:** the `ItemDto` interface (mirrors the backend DTO) and the
-    loading/error/items signals.
+    **Look for:** the `ItemDto` interface (mirrors the backend DTO — note `id` is
+    an **opaque string**, a UUID), the read-only change-history section
+    (`GET /entra-backend/history`), and the loading/error/items signals.
 
 29. **File:** `EntraUi/src/app/admin/admin.component.ts`
-    **Read for:** an Admin-only write screen (`POST /entra-backend/items`) and graceful 403
-    handling.
-    **Look for:** the signal-bound form and the comment that the **server**
-    enforces Admin — the client just presents it nicely.
+    **Read for:** an Admin-only write screen (`POST /entra-backend/items`), plus edit/delete, and
+    graceful 403 handling.
+    **Look for:** the signal-bound form, the `editingId`/`deletingId` signals
+    keyed by the item's **opaque public id (string)**, and the comment that the
+    **server** enforces Admin — the client just presents it nicely.
 
 30. **File:** `EntraUi/src/app/app.routes.ts`
     **Read for:** how routes attach the guards.
@@ -349,6 +489,13 @@ outcomes observable.
     **Look for:** `provideHttpClient(withInterceptors([authTokenInterceptor]))`
     and the comment on why the **custom** interceptor is registered but MSAL's
     class-based `MsalInterceptor` is **not** (to avoid double token attachment).
+
+31a. **File:** `EntraUi/src/app/app.component.ts`
+    **Read for:** the **app shell** — the header/nav that hosts every routed view.
+    **Look for:** how it reads `AuthSessionStore` to show **Sign in** vs **Sign
+    out** + roles, shows nav links only when authenticated (and the **Admin** link
+    only for the `Admin` role — UX only), and initiates sign-in/out via
+    `TokenRefreshService`.
 
 32. **File:** `entra-backend/src/main/java/com/example/entraoauth/audit/AccessAudit.java`
     **Read for:** the audit entity mapped to `access_audit`.
@@ -424,6 +571,84 @@ the testing techniques.
 - *Just Spring Boot resource server + persistence:* Stage 1 and Stage 3.
 - *Just the browser token lifecycle:* Stage 5 (files 22-25) and Stage 7.
 - *Just testing techniques:* Stage 4 and Stage 7.
+
+---
+
+## File Manifest (the print list, in order)
+
+This is the canonical, ordered list the "read it like a book" commands consume.
+It is also shipped as `GUIDE/reading-order.txt` (same order, one path per line).
+Stage 0 and the final stop are Markdown docs; everything else is a source file.
+
+```
+# Stage 0 — design (concepts first)
+.kiro/specs/entra-oauth-fullstack/requirements.md
+.kiro/specs/entra-oauth-fullstack/design.md
+
+# Stage 1 — backend foundation
+entra-backend/pom.xml
+entra-backend/src/main/java/com/example/entraoauth/EntraOauthApplication.java
+entra-backend/src/main/resources/application.yml
+entra-backend/src/main/resources/db/migration/V1__initial_schema.sql
+entra-backend/src/main/resources/db/migration/V2__item_category_and_history.sql
+entra-backend/src/main/resources/db/migration/V3__public_ids.sql
+
+# Stage 2 — token validation pipeline
+entra-backend/src/main/java/com/example/entraoauth/security/AudienceValidator.java
+entra-backend/src/main/java/com/example/entraoauth/security/RolesClaimConverter.java
+entra-backend/src/main/java/com/example/entraoauth/security/JwtConfig.java
+entra-backend/src/main/java/com/example/entraoauth/security/SecurityConfig.java
+
+# Stage 3 — domain and endpoints
+entra-backend/src/main/java/com/example/entraoauth/item/Item.java
+entra-backend/src/main/java/com/example/entraoauth/item/ItemHistory.java
+entra-backend/src/main/java/com/example/entraoauth/item/ItemDto.java
+entra-backend/src/main/java/com/example/entraoauth/item/ItemHistoryDto.java
+entra-backend/src/main/java/com/example/entraoauth/item/CreateItemRequest.java
+entra-backend/src/main/java/com/example/entraoauth/item/UpdateItemRequest.java
+entra-backend/src/main/java/com/example/entraoauth/item/ItemRepository.java
+entra-backend/src/main/java/com/example/entraoauth/item/ItemHistoryRepository.java
+entra-backend/src/main/java/com/example/entraoauth/item/ItemService.java
+entra-backend/src/main/java/com/example/entraoauth/item/ItemController.java
+entra-backend/src/main/java/com/example/entraoauth/item/HistoryController.java
+
+# Stage 4 — backend tests
+entra-backend/src/test/java/com/example/entraoauth/security/RolesClaimConverterPropertyTest.java
+entra-backend/src/test/java/com/example/entraoauth/security/InvalidTokenRejectionPropertyTest.java
+entra-backend/src/test/java/com/example/entraoauth/security/CorsPropertyTest.java
+entra-backend/src/test/java/com/example/entraoauth/item/WriteAuthorizationPropertyTest.java
+entra-backend/src/test/java/com/example/entraoauth/item/ItemControllerSecurityTest.java
+entra-backend/src/test/java/com/example/entraoauth/item/HistoryControllerSecurityTest.java
+entra-backend/src/test/java/com/example/entraoauth/item/ItemServiceHistoryTest.java
+
+# Stage 5 — frontend auth infrastructure
+EntraUi/src/main.ts
+EntraUi/src/app/auth/msal.config.ts
+EntraUi/src/app/auth/auth-session.store.ts
+EntraUi/src/app/auth/token-refresh.service.ts
+EntraUi/src/app/auth/auth-token.interceptor.ts
+EntraUi/src/app/auth/auth.guard.ts
+
+# Stage 6 — frontend components, wiring, and backend audit
+EntraUi/src/app/home/home.component.ts
+EntraUi/src/app/login/login.component.ts
+EntraUi/src/app/dashboard/dashboard.component.ts
+EntraUi/src/app/admin/admin.component.ts
+EntraUi/src/app/app.routes.ts
+EntraUi/src/app/app.config.ts
+EntraUi/src/app/app.component.ts
+entra-backend/src/main/java/com/example/entraoauth/audit/AccessAudit.java
+entra-backend/src/main/java/com/example/entraoauth/audit/AccessAuditRepository.java
+entra-backend/src/main/java/com/example/entraoauth/security/AccessAuditFilter.java
+
+# Stage 7 — frontend tests
+EntraUi/src/app/auth/token-refresh.service.spec.ts
+EntraUi/src/app/auth/token-refresh.retry.spec.ts
+EntraUi/src/app/auth/auth-token.interceptor.spec.ts
+
+# Stage 8 — run it and observe
+GUIDE/TOKEN-VERIFICATION-GUIDE.md
+```
 
 ---
 
