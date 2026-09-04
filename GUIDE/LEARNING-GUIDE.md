@@ -63,50 +63,50 @@ Legend for each entry:
 If you prefer to read on paper (or a tablet) away from the editor, you can turn
 this reading path into a single ordered "book" and print it. The exact ordered
 list of files is the **File Manifest** at the end of this guide, and this repo
-ships that same list as a plain text file — `GUIDE/reading-order.txt` (one file
+ships that same list as a plain text file — `GUIDE/entra-tutorial-learning-book.order.txt` (one file
 path per line, in reading order; blank lines and `#` comments are ignored). The
 commands below consume it.
 
 **Run these from the repository root** — the folder that directly contains the
 `GUIDE/`, `entra-backend/`, and `EntraUi/` directories (for example
-`C:\dev\entra-tutorial`). The commands create the book as **`learning-book.txt`
+`C:\dev\entra-tutorial`). The commands create the book as **`entra-tutorial-learning-book.txt`
 in that same repository-root folder** — right next to `GUIDE/` — and then print a
 one-line confirmation so you can see it worked. (The file is a normal, tracked
 file in the repo root; it will show up in `git status`.)
 
 **Option A — one concatenated "book" file (recommended for printing).**
-Produces `learning-book.txt` with a labelled banner before each file, in order,
+Produces `entra-tutorial-learning-book.txt` with a labelled banner before each file, in order,
 so it reads front-to-back like chapters.
 
 macOS / Linux (bash):
 
 ```bash
 # Fails loudly if you're not in the repo root, so you never get a silent no-op:
-[ -f GUIDE/reading-order.txt ] || { echo "Not in the repo root. cd to the folder that contains GUIDE/, then rerun."; }
-: > learning-book.txt
+[ -f GUIDE/entra-tutorial-learning-book.order.txt ] || { echo "Not in the repo root. cd to the folder that contains GUIDE/, then rerun."; }
+: > entra-tutorial-learning-book.txt
 while IFS= read -r f; do
   case "$f" in ''|\#*) continue;; esac        # skip blank lines and # comments
-  { printf '\n\n===== FILE: %s =====\n\n' "$f"; cat "$f"; } >> learning-book.txt
-done < GUIDE/reading-order.txt
-echo "Wrote learning-book.txt ($(grep -c '===== FILE:' learning-book.txt) files, $(wc -l < learning-book.txt) lines)."
-# Then open/print learning-book.txt (e.g. `lp learning-book.txt`, or open it and Print).
+  { printf '\n\n===== FILE: %s =====\n\n' "$f"; cat "$f"; } >> entra-tutorial-learning-book.txt
+done < GUIDE/entra-tutorial-learning-book.order.txt
+echo "Wrote entra-tutorial-learning-book.txt ($(grep -c '===== FILE:' entra-tutorial-learning-book.txt) files, $(wc -l < entra-tutorial-learning-book.txt) lines)."
+# Then open/print entra-tutorial-learning-book.txt (e.g. `lp entra-tutorial-learning-book.txt`, or open it and Print).
 ```
 
 Windows (PowerShell):
 
 ```powershell
 # Fails loudly if you're not in the repo root, so you never get a silent no-op:
-if (-not (Test-Path GUIDE/reading-order.txt)) { Write-Host "Not in the repo root. cd to the folder that contains GUIDE\, then rerun." }
-Remove-Item learning-book.txt -ErrorAction Ignore
-Get-Content GUIDE/reading-order.txt | Where-Object { $_ -and $_ -notmatch '^\s*#' } | ForEach-Object {
-  "`r`n`r`n===== FILE: $_ =====`r`n" | Add-Content learning-book.txt
-  Get-Content $_ | Add-Content learning-book.txt
+if (-not (Test-Path GUIDE/entra-tutorial-learning-book.order.txt)) { Write-Host "Not in the repo root. cd to the folder that contains GUIDE\, then rerun." }
+Remove-Item entra-tutorial-learning-book.txt -ErrorAction Ignore
+Get-Content GUIDE/entra-tutorial-learning-book.order.txt | Where-Object { $_ -and $_ -notmatch '^\s*#' } | ForEach-Object {
+  "`r`n`r`n===== FILE: $_ =====`r`n" | Add-Content entra-tutorial-learning-book.txt
+  Get-Content $_ | Add-Content entra-tutorial-learning-book.txt
 }
-Write-Host "Wrote learning-book.txt ($((Select-String -Path learning-book.txt -Pattern '===== FILE:').Count) files, $((Get-Content learning-book.txt).Count) lines)."
-# Then print: notepad learning-book.txt  (File > Print), or your editor's Print.
+Write-Host "Wrote entra-tutorial-learning-book.txt ($((Select-String -Path entra-tutorial-learning-book.txt -Pattern '===== FILE:').Count) files, $((Get-Content entra-tutorial-learning-book.txt).Count) lines)."
+# Then print: notepad entra-tutorial-learning-book.txt  (File > Print), or your editor's Print.
 ```
 
-A successful run prints `Wrote learning-book.txt (50 files, ...)`. If you instead
+A successful run prints `Wrote entra-tutorial-learning-book.txt (50 files, ...)`. If you instead
 see the "Not in the repo root" message, `cd` to the folder that contains `GUIDE/`
 and run it again. (The command is otherwise silent by design — it only writes the
 file — which is why the confirmation line is there.)
@@ -120,13 +120,13 @@ macOS / Linux:
 while IFS= read -r f; do
   case "$f" in ''|\#*) continue;; esac
   lp "$f"        # or: enscript -p - "$f" | lp   for syntax-friendly output
-done < GUIDE/reading-order.txt
+done < GUIDE/entra-tutorial-learning-book.order.txt
 ```
 
 Windows (PowerShell):
 
 ```powershell
-Get-Content GUIDE/reading-order.txt | Where-Object { $_ -and $_ -notmatch '^\s*#' } | ForEach-Object {
+Get-Content GUIDE/entra-tutorial-learning-book.order.txt | Where-Object { $_ -and $_ -notmatch '^\s*#' } | ForEach-Object {
   Start-Process -FilePath $_ -Verb Print       # prints via the file type's default handler
 }
 ```
@@ -594,7 +594,7 @@ the testing techniques.
 ## File Manifest (the print list, in order)
 
 This is the canonical, ordered list the "read it like a book" commands consume.
-It is also shipped as `GUIDE/reading-order.txt` (same order, one path per line).
+It is also shipped as `GUIDE/entra-tutorial-learning-book.order.txt` (same order, one path per line).
 Stage 0 and the final stop are Markdown docs; everything else is a source file.
 
 ```

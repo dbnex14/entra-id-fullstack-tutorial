@@ -1,7 +1,12 @@
+# entra-tutorial-learning-book.order.txt
 # Ordered reading path for the Entra ID OAuth2 full-stack reference.
-# One file path per line, relative to the repository root, in the order the
-# LEARNING-GUIDE.md reading path recommends. Blank lines and lines starting
-# with '#' are ignored by the "read it like a book" commands in LEARNING-GUIDE.md.
+#
+# This is the ORDER LIST consumed by the "read it like a book" commands in
+# GUIDE/LEARNING-GUIDE.md, which concatenate these files (in this order) into
+# entra-tutorial-learning-book.txt in the repository root.
+#
+# One file path per line, relative to the repository root, in reading order.
+# Blank lines and lines starting with '#' are ignored.
 
 # Stage 0 - design (concepts first)
 .kiro/specs/entra-oauth-fullstack/requirements.md
