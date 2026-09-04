@@ -67,7 +67,11 @@ ships that same list as a plain text file — `GUIDE/reading-order.txt` (one fil
 path per line, in reading order; blank lines and `#` comments are ignored). The
 commands below consume it.
 
-Run them from the repository root (`entra-id-fullstack-tutorial/`).
+**Run these from the repository root** — the folder that directly contains the
+`GUIDE/`, `entra-backend/`, and `EntraUi/` directories (for example
+`C:\dev\entra-tutorial`). The commands write a file named `learning-book.txt`
+into that folder and then print a one-line confirmation, so you can see they
+worked.
 
 **Option A — one concatenated "book" file (recommended for printing).**
 Produces `learning-book.txt` with a labelled banner before each file, in order,
@@ -76,26 +80,38 @@ so it reads front-to-back like chapters.
 macOS / Linux (bash):
 
 ```bash
+# Fails loudly if you're not in the repo root, so you never get a silent no-op:
+[ -f GUIDE/reading-order.txt ] || { echo "Not in the repo root. cd to the folder that contains GUIDE/, then rerun."; }
 : > learning-book.txt
 while IFS= read -r f; do
   case "$f" in ''|\#*) continue;; esac        # skip blank lines and # comments
   { printf '\n\n===== FILE: %s =====\n\n' "$f"; cat "$f"; } >> learning-book.txt
 done < GUIDE/reading-order.txt
+echo "Wrote learning-book.txt ($(grep -c '===== FILE:' learning-book.txt) files, $(wc -l < learning-book.txt) lines)."
 # Then open/print learning-book.txt (e.g. `lp learning-book.txt`, or open it and Print).
 ```
 
 Windows (PowerShell):
 
 ```powershell
+# Fails loudly if you're not in the repo root, so you never get a silent no-op:
+if (-not (Test-Path GUIDE/reading-order.txt)) { Write-Host "Not in the repo root. cd to the folder that contains GUIDE\, then rerun." }
 Remove-Item learning-book.txt -ErrorAction Ignore
 Get-Content GUIDE/reading-order.txt | Where-Object { $_ -and $_ -notmatch '^\s*#' } | ForEach-Object {
   "`r`n`r`n===== FILE: $_ =====`r`n" | Add-Content learning-book.txt
   Get-Content $_ | Add-Content learning-book.txt
 }
+Write-Host "Wrote learning-book.txt ($((Select-String -Path learning-book.txt -Pattern '===== FILE:').Count) files, $((Get-Content learning-book.txt).Count) lines)."
 # Then print: notepad learning-book.txt  (File > Print), or your editor's Print.
 ```
 
-**Option B — print each file separately, in order** (a stack of per-file printouts):
+A successful run prints `Wrote learning-book.txt (50 files, ...)`. If you instead
+see the "Not in the repo root" message, `cd` to the folder that contains `GUIDE/`
+and run it again. (The command is otherwise silent by design — it only writes the
+file — which is why the confirmation line is there.)
+
+**Option B — print each file separately, in order** (a stack of per-file printouts).
+Run from the repo root, same as above:
 
 macOS / Linux:
 
