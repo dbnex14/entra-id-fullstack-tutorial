@@ -69,9 +69,10 @@ commands below consume it.
 
 **Run these from the repository root** — the folder that directly contains the
 `GUIDE/`, `entra-backend/`, and `EntraUi/` directories (for example
-`C:\dev\entra-tutorial`). The commands write a file named `learning-book.txt`
-into that folder and then print a one-line confirmation, so you can see they
-worked.
+`C:\dev\entra-tutorial`). The commands create the book as **`learning-book.txt`
+in that same repository-root folder** — right next to `GUIDE/` — and then print a
+one-line confirmation so you can see it worked. (The file is a normal, tracked
+file in the repo root; it will show up in `git status`.)
 
 **Option A — one concatenated "book" file (recommended for printing).**
 Produces `learning-book.txt` with a labelled banner before each file, in order,
