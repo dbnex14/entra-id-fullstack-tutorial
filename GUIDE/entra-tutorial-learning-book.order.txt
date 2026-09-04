@@ -3,7 +3,7 @@
 #
 # This is the ORDER LIST consumed by the "read it like a book" commands in
 # GUIDE/LEARNING-GUIDE.md, which concatenate these files (in this order) into
-# entra-tutorial-learning-book.txt in the repository root.
+# entra-tutorial-learning-book.md (a Markdown book) in the repository root.
 #
 # One file path per line, relative to the repository root, in reading order.
 # Blank lines and lines starting with '#' are ignored.

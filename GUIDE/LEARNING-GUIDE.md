@@ -61,35 +61,58 @@ Legend for each entry:
 ## Print it and read it like a book
 
 If you prefer to read on paper (or a tablet) away from the editor, you can turn
-this reading path into a single ordered "book" and print it. The exact ordered
-list of files is the **File Manifest** at the end of this guide, and this repo
-ships that same list as a plain text file — `GUIDE/entra-tutorial-learning-book.order.txt` (one file
-path per line, in reading order; blank lines and `#` comments are ignored). The
-commands below consume it.
+this reading path into a single ordered **Markdown "book"** and print it. The
+exact ordered list of files is the **File Manifest** at the end of this guide,
+and this repo ships that same list as a plain text file —
+`GUIDE/entra-tutorial-learning-book.order.txt` (one file path per line, in
+reading order; blank lines and `#` comments are ignored). The commands below
+consume it.
 
 **Run these from the repository root** — the folder that directly contains the
 `GUIDE/`, `entra-backend/`, and `EntraUi/` directories (for example
-`C:\dev\entra-tutorial`). The commands create the book as **`entra-tutorial-learning-book.txt`
-in that same repository-root folder** — right next to `GUIDE/` — and then print a
-one-line confirmation so you can see it worked. (The file is a normal, tracked
-file in the repo root; it will show up in `git status`.)
+`C:\dev\entra-tutorial`). The commands create the book as
+**`entra-tutorial-learning-book.md` in that same repository-root folder** — right
+next to `GUIDE/` — and then print a one-line confirmation so you can see it
+worked. (It is a normal, untracked file in the repo root; it will show up in
+`git status`.)
 
-**Option A — one concatenated "book" file (recommended for printing).**
-Produces `entra-tutorial-learning-book.txt` with a labelled banner before each file, in order,
-so it reads front-to-back like chapters.
+The output is **Markdown**: each file becomes a `##` heading followed by a
+fenced code block tagged with the file's language (`java`, `ts`, `sql`, `yaml`,
+`xml`, `md`), so a Markdown viewer renders proper headings and **syntax-highlighted
+code with comments**. Open it in any Markdown previewer (VS Code, IntelliJ,
+Typora, a browser extension, etc.) and print from there. The code fences use
+**tildes** (`~~~`) rather than backticks so that source files which themselves
+contain triple-backticks do not break the fencing.
+
+**Option A — one concatenated Markdown "book" (recommended).**
+Produces `entra-tutorial-learning-book.md`, front-to-back like chapters.
 
 macOS / Linux (bash):
 
 ```bash
 # Fails loudly if you're not in the repo root, so you never get a silent no-op:
 [ -f GUIDE/entra-tutorial-learning-book.order.txt ] || { echo "Not in the repo root. cd to the folder that contains GUIDE/, then rerun."; }
-: > entra-tutorial-learning-book.txt
+out=entra-tutorial-learning-book.md
+printf '# Entra Tutorial — Learning Book\n\nGenerated from GUIDE/entra-tutorial-learning-book.order.txt. Read top to bottom.\n' > "$out"
 while IFS= read -r f; do
   case "$f" in ''|\#*) continue;; esac        # skip blank lines and # comments
-  { printf '\n\n===== FILE: %s =====\n\n' "$f"; cat "$f"; } >> entra-tutorial-learning-book.txt
+  printf '\n\n## %s\n\n' "$f"  >> "$out"
+  case "$f" in
+    *.md)
+      # Markdown files are embedded as-is so they RENDER (not shown as raw source).
+      cat "$f" >> "$out"; printf '\n' >> "$out";;
+    *)
+      # Code files go in a language-tagged fence for syntax highlighting. Tilde
+      # fences (~~~) avoid clashing with any backticks inside the source.
+      case "$f" in
+        *.java) lang=java;; *.ts) lang=ts;; *.sql) lang=sql;;
+        *.yml|*.yaml) lang=yaml;; *.xml) lang=xml;; *) lang=text;;
+      esac
+      { printf '~~~%s\n' "$lang"; cat "$f"; printf '\n~~~\n'; } >> "$out";;
+  esac
 done < GUIDE/entra-tutorial-learning-book.order.txt
-echo "Wrote entra-tutorial-learning-book.txt ($(grep -c '===== FILE:' entra-tutorial-learning-book.txt) files, $(wc -l < entra-tutorial-learning-book.txt) lines)."
-# Then open/print entra-tutorial-learning-book.txt (e.g. `lp entra-tutorial-learning-book.txt`, or open it and Print).
+files=$(grep -cE '^[^#[:space:]]' GUIDE/entra-tutorial-learning-book.order.txt)
+echo "Wrote $out ($files files, $(wc -l < "$out") lines). Open it in a Markdown viewer and print."
 ```
 
 Windows (PowerShell):
@@ -97,19 +120,29 @@ Windows (PowerShell):
 ```powershell
 # Fails loudly if you're not in the repo root, so you never get a silent no-op:
 if (-not (Test-Path GUIDE/entra-tutorial-learning-book.order.txt)) { Write-Host "Not in the repo root. cd to the folder that contains GUIDE\, then rerun." }
-Remove-Item entra-tutorial-learning-book.txt -ErrorAction Ignore
-Get-Content GUIDE/entra-tutorial-learning-book.order.txt | Where-Object { $_ -and $_ -notmatch '^\s*#' } | ForEach-Object {
-  "`r`n`r`n===== FILE: $_ =====`r`n" | Add-Content entra-tutorial-learning-book.txt
-  Get-Content $_ | Add-Content entra-tutorial-learning-book.txt
+$out = "entra-tutorial-learning-book.md"
+"# Entra Tutorial - Learning Book`r`n`r`nGenerated from GUIDE/entra-tutorial-learning-book.order.txt. Read top to bottom." | Set-Content $out
+$files = Get-Content GUIDE/entra-tutorial-learning-book.order.txt | Where-Object { $_ -and $_ -notmatch '^\s*#' }
+foreach ($f in $files) {
+  "`r`n`r`n## $f`r`n" | Add-Content $out
+  if ($f -match '\.md$') {
+    # Markdown files are embedded as-is so they RENDER (not shown as raw source).
+    Get-Content $f | Add-Content $out
+  } else {
+    # Code files go in a language-tagged tilde fence for syntax highlighting.
+    $lang = switch -Regex ($f) { '\.java$'{'java'} '\.ts$'{'ts'} '\.sql$'{'sql'} '\.ya?ml$'{'yaml'} '\.xml$'{'xml'} default {'text'} }
+    "~~~$lang" | Add-Content $out
+    Get-Content $f | Add-Content $out
+    "~~~"        | Add-Content $out
+  }
 }
-Write-Host "Wrote entra-tutorial-learning-book.txt ($((Select-String -Path entra-tutorial-learning-book.txt -Pattern '===== FILE:').Count) files, $((Get-Content entra-tutorial-learning-book.txt).Count) lines)."
-# Then print: notepad entra-tutorial-learning-book.txt  (File > Print), or your editor's Print.
+Write-Host "Wrote $out ($($files.Count) files, $((Get-Content $out).Count) lines). Open it in a Markdown viewer and print."
 ```
 
-A successful run prints `Wrote entra-tutorial-learning-book.txt (50 files, ...)`. If you instead
-see the "Not in the repo root" message, `cd` to the folder that contains `GUIDE/`
-and run it again. (The command is otherwise silent by design — it only writes the
-file — which is why the confirmation line is there.)
+A successful run prints `Wrote entra-tutorial-learning-book.md (50 files, ...)`.
+If you instead see the "Not in the repo root" message, `cd` to the folder that
+contains `GUIDE/` and run it again. (The command is otherwise silent by design —
+it only writes the file — which is why the confirmation line is there.)
 
 **Option B — print each file separately, in order** (a stack of per-file printouts).
 Run from the repo root, same as above:
@@ -132,11 +165,13 @@ Get-Content GUIDE/entra-tutorial-learning-book.order.txt | Where-Object { $_ -an
 ```
 
 Tips for the paper read:
-- Print with **line wrapping on** and a **monospace** font so long comment lines
-  are not clipped. For syntax highlighting on paper, `enscript`, `a2ps`, or
-  VS Code's Print work well.
-- Read the printouts in manifest order — it matches the stages below exactly, so
-  the concepts build on one another like chapters.
+- Open `entra-tutorial-learning-book.md` in a **Markdown viewer** (VS Code,
+  IntelliJ, a browser extension) so headings and code highlighting render, then
+  print from there — enabling "background graphics" keeps the code-block shading.
+- Read in manifest order — it matches the stages below exactly, so the concepts
+  build on one another like chapters.
+- You do not need the running app to read; save `TOKEN-VERIFICATION-GUIDE.md`
+  (the last item) for when you are back at a machine and want to see it live.
 - You do not need the running app to read; save `TOKEN-VERIFICATION-GUIDE.md`
   (the last item) for when you are back at a machine and want to see it live.
 
