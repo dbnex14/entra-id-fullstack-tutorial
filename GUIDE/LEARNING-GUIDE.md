@@ -60,6 +60,22 @@ Legend for each entry:
 
 ## Print it and read it like a book
 
+> **Two different things — don't confuse them:**
+> - **`LEARNING-GUIDE.md` (this file) is the *guide* — the map.** It does *not*
+>   contain any source code. It tells you *which* files to read, *in what order*,
+>   and *what to look for* in each. Read this to know the path.
+> - **`entra-tutorial-learning-book.md` is the *book* — the territory.** It is the
+>   actual concatenated *contents* of all the source files listed here, in reading
+>   order, so you can read the real code and comments front-to-back. It is
+>   **generated on demand** by the commands below (it is not stored in the repo);
+>   the ordered list it is built from is
+>   `GUIDE/entra-tutorial-learning-book.order.txt`.
+>
+> In short: the guide says *what to read and why*; the generated book *is the
+> reading material*. You only need to generate the book if you want to read/print
+> the code away from the editor — otherwise just follow this guide and open the
+> files in your editor.
+
 If you prefer to read on paper (or a tablet) away from the editor, you can turn
 this reading path into a single ordered **Markdown "book"** and print it. The
 exact ordered list of files is the **File Manifest** at the end of this guide,
